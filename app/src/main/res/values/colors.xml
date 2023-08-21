@@ -5,4 +5,14 @@
     <color name="blue">#0000FF</color>s
     <color name="grey">#ff424242</color>
     <color name="lavender">#8692f7</color>
+
+    <color name="primaryColor">#3AB691</color>
+
+    <color name="baseColor">#F9F9F9</color>
+
+    <color name="secondaryColor">#DB5252</color>
+
+    <!-- <color name="optionalColor">#37A9DB</color>-->
+    <color name="optionalColor">#2D2E4A</color>
+
 </resources>

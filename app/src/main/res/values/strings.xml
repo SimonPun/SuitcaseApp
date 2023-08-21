@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">SuitcaseApp</string>
+    <string name="hamburger_button_content_description">Open Navigation Menu</string>
+
 </resources>

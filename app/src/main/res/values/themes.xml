@@ -5,6 +5,14 @@
         <item name="colorPrimaryVariant">@color/blue</item>
 
     </style>
+    <style name="ToolbarTitleTextAppearance" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:textSize">24sp</item>
+        <!--<item name="android:textColor">@color/white</item>-->
+    </style>
+    <style name="RoundButton" parent="">
+        <item name="cornerSize">50%</item> <!-- Adjust this value for desired roundness -->
+    </style>
+
 
     <style name="Theme.SuitcaseApp" parent="Base.Theme.SuitcaseApp" />
 </resources>

@@ -1,5 +1,7 @@
 package com.jivanpun.suitcaseapp;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -52,22 +54,45 @@ public class HomePage extends AppCompatActivity {
         logoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Sign out from Google Sign-In and Firebase Authentication
-                googleSignInClient.signOut().addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        if (task.isSuccessful()) {
-                            auth.signOut();
-                            // Show a toast message indicating successful logout
-                            Toast.makeText(getApplicationContext(), "Logged Out Successful", Toast.LENGTH_SHORT).show();
+                // Create a confirmation dialog
+                AlertDialog.Builder builder = new AlertDialog.Builder(HomePage.this);
+                builder.setTitle("Confirm Logout");
+                builder.setMessage("Are you sure you want to log out?");
 
-                            // Navigate to the main activity and finish this activity
-                            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                            startActivity(intent);
-                            finish();
-                        }
+
+                builder.setPositiveButton("Logout", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // Sign out from Google Sign-In and Firebase Authentication
+                        googleSignInClient.signOut().addOnCompleteListener(new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                if (task.isSuccessful()) {
+                                    auth.signOut();
+                                    // Show a toast message indicating successful logout
+                                    Toast.makeText(getApplicationContext(), "Logged out Successful", Toast.LENGTH_SHORT).show();
+
+                                    // Navigate to the main activity and finish this activity
+                                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                                    startActivity(intent);
+                                    finish();
+                                }
+                            }
+                        });
                     }
                 });
+
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // Dismiss the dialog (cancel logout)
+                        dialogInterface.dismiss();
+                    }
+                });
+
+                // Show the dialog
+                AlertDialog dialog = builder.create();
+                dialog.show();
             }
         });
     }
