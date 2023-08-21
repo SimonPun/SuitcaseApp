@@ -26,6 +26,8 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.GoogleAuthProvider;
 
 public class MainActivity extends AppCompatActivity {
@@ -133,7 +135,16 @@ public class MainActivity extends AppCompatActivity {
                                     finish(); // Finish MainActivity (login page)
                                 } else {
                                     // Login failed, show error message
-                                    Toast.makeText(MainActivity.this, "Authentication Failed", Toast.LENGTH_SHORT).show();
+                                    if (task.getException() instanceof FirebaseAuthInvalidUserException) {
+                                        // Invalid email
+                                        Toast.makeText(MainActivity.this, "Invalid Email", Toast.LENGTH_SHORT).show();
+                                    } else if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
+                                        // Invalid password
+                                        Toast.makeText(MainActivity.this, "Invalid Password", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        // Other authentication error
+                                        Toast.makeText(MainActivity.this, "Authentication Failed", Toast.LENGTH_SHORT).show();
+                                    }
                                 }
                             }
                         });
