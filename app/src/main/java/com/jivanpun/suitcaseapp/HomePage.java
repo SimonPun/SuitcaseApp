@@ -10,7 +10,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.jivanpun.suitcaseapp.R;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -20,19 +19,27 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class HomePage extends AppCompatActivity {
-    FirebaseAuth auth;
-    GoogleSignInClient googleSignInClient;
+    // Firebase Authentication instance
+    private FirebaseAuth auth;
+
+    // Google Sign-In client
+    private GoogleSignInClient googleSignInClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_page);
 
+        // Initialize Firebase Authentication
         auth = FirebaseAuth.getInstance();
+
+        // Initialize Google Sign-In client
         googleSignInClient = GoogleSignIn.getClient(this, GoogleSignInOptions.DEFAULT_SIGN_IN);
 
+        // Get the currently signed-in user
         FirebaseUser currentUser = auth.getCurrentUser();
 
+        // Display user's email in the welcome message
         if (currentUser != null) {
             String registeredEmail = currentUser.getEmail();
 
@@ -40,18 +47,28 @@ public class HomePage extends AppCompatActivity {
             usernameTextView.setText("Welcome " + registeredEmail);
         }
 
+        // Set click listener for the logout button
         Button logoutButton = findViewById(R.id.logoutButton);
-        logoutButton.setOnClickListener(view -> googleSignInClient.signOut().addOnCompleteListener(new OnCompleteListener<Void>() {
+        logoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                if (task.isSuccessful()) {
-                    auth.signOut();
-                    Toast.makeText(getApplicationContext(), " Logged Out Successful", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                    startActivity(intent);
-                    finish();
-                }
+            public void onClick(View view) {
+                // Sign out from Google Sign-In and Firebase Authentication
+                googleSignInClient.signOut().addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            auth.signOut();
+                            // Show a toast message indicating successful logout
+                            Toast.makeText(getApplicationContext(), "Logged Out Successful", Toast.LENGTH_SHORT).show();
+
+                            // Navigate to the main activity and finish this activity
+                            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                            startActivity(intent);
+                            finish();
+                        }
+                    }
+                });
             }
-        }));
+        });
     }
 }

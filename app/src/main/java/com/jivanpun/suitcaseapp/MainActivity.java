@@ -27,41 +27,42 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.ktx.Firebase;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.AuthResult;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 
 public class MainActivity extends AppCompatActivity {
-    TextInputEditText editTextEmail, editTextPassword;
-    Button signIn;
-    TextView signUp, forgotpassword;
+    // Declare UI elements
+    private TextInputEditText editTextEmail, editTextPassword;
+    private Button signIn;
+    private TextView signUp, forgotPassword;
+    private ImageView googleSignup;
 
-    ImageView googleSignup;
-    Firebase mAuth;
-
-    FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
+    // Firebase Authentication instance
+    private FirebaseAuth firebaseAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
+        // Initialize UI elements
         editTextEmail = findViewById(R.id.email);
         editTextPassword = findViewById(R.id.password);
         signIn = findViewById(R.id.sign_in);
         signUp = findViewById(R.id.sign_up);
         googleSignup = findViewById(R.id.google_btn);
-        forgotpassword = findViewById(R.id.forgot_password);
+        forgotPassword = findViewById(R.id.forgot_password);
 
+        // Initialize Firebase Authentication
+        firebaseAuth = FirebaseAuth.getInstance();
+
+        // Check if a user is already logged in
         if (firebaseAuth.getCurrentUser() != null) {
             // User is already logged in, redirect to the home page
             Intent intent = new Intent(MainActivity.this, HomePage.class);
             startActivity(intent);
             finish(); // Finish MainActivity (login page)
         }
+
+        // Set click listener for Sign Up text
         signUp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -70,35 +71,44 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             }
         });
-        forgotpassword.setOnClickListener(new View.OnClickListener() {
+
+        // Set click listener for Forgot Password text
+        forgotPassword.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 showForgotPasswordDialog();
             }
         });
-        //initialize signin opions
-        GoogleSignInOptions googleSignInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestIdToken("315387309180-6fm29ae42qijsj84bn9kknadu5j6tpoh.apps.googleusercontent.com").requestEmail().build();
 
-        //initialize signin client
+        // Initialize Google Sign-In options
+        GoogleSignInOptions googleSignInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken("315387309180-6fm29ae42qijsj84bn9kknadu5j6tpoh.apps.googleusercontent.com") // Add your client ID here
+                .requestEmail()
+                .build();
+
+        // Initialize Google Sign-In client
         GoogleSignInClient googleSignInClient = GoogleSignIn.getClient(this, googleSignInOptions);
 
+        // Set click listener for Google Sign-Up button
         googleSignup.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //initialize signin intent
+                // Initialize sign-in intent
                 Intent intent = googleSignInClient.getSignInIntent();
-                //start activity for result
+                // Start activity for result
                 startActivityForResult(intent, 100);
             }
         });
 
-
+        // Set click listener for Sign In button
         signIn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // Get user input
                 String email = editTextEmail.getText().toString();
                 String password = editTextPassword.getText().toString();
 
+                // Validate email and password
                 if (TextUtils.isEmpty(email)) {
                     Toast.makeText(MainActivity.this, "Enter Email", Toast.LENGTH_SHORT).show();
                     return;
@@ -109,17 +119,20 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
+                // Sign in with Firebase Authentication
                 firebaseAuth.signInWithEmailAndPassword(email, password)
                         .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
                                 if (task.isSuccessful()) {
+                                    // Login successful, navigate to the home page
                                     Toast.makeText(MainActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
                                     Intent intent = new Intent(MainActivity.this, HomePage.class);
                                     intent.putExtra("loggedIn", true); // Set a flag indicating successful login
                                     startActivity(intent);
                                     finish(); // Finish MainActivity (login page)
                                 } else {
+                                    // Login failed, show error message
                                     Toast.makeText(MainActivity.this, "Authentication Failed", Toast.LENGTH_SHORT).show();
                                 }
                             }
@@ -131,41 +144,34 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        // Check condition
+        // Check request code
         if (requestCode == 100) {
-            // When request code is equal to 100 initialize task
+            // When request code is 100, initialize task
             Task<GoogleSignInAccount> signInAccountTask = GoogleSignIn.getSignedInAccountFromIntent(data);
-            // check condition
+            // Check if the task is successful
             if (signInAccountTask.isSuccessful()) {
-                // When google sign in successful initialize string
-                String s = "Google sign in successful";
-                // Display Toast
-                displaytoast(s);
-                // Initialize sign in account
+                // Google sign-in successful, initialize string
+                String successMessage = "Google sign-in successful";
+                // Display a Toast message
+                displayToast(successMessage);
                 try {
-                    // Initialize sign in account
+                    // Initialize the sign-in account
                     GoogleSignInAccount googleSignInAccount = signInAccountTask.getResult(ApiException.class);
-                    // Check condition
                     if (googleSignInAccount != null) {
-                        // When sign in account is not equal to null initialize auth credential
+                        // When sign-in account is not null, initialize auth credential
                         AuthCredential authCredential = GoogleAuthProvider.getCredential(googleSignInAccount.getIdToken(), null);
-                        // Check credential
+                        // Sign in with Firebase using the credential
                         firebaseAuth.signInWithCredential(authCredential).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
-                                // Check condition
                                 if (task.isSuccessful()) {
-                                    // When task is successful redirect to profile activity display Toast
+                                    // Firebase authentication successful, redirect to profile activity
                                     startActivity(new Intent(getApplicationContext(), HomePage.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                                     displayToast("Login successful");
                                 } else {
-                                    // When task is unsuccessful display Toast
-                                    displayToast("Authentication Failed :" + task.getException().getMessage());
+                                    // Firebase authentication failed, display error message
+                                    displayToast("Authentication Failed: " + task.getException().getMessage());
                                 }
-                            }
-
-                            private void displayToast(String firebaseAuthenticationSuccessful) {
-                                Toast.makeText(getApplicationContext(),firebaseAuthenticationSuccessful,Toast.LENGTH_SHORT).show();
                             }
                         });
                     }
@@ -176,12 +182,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void displaytoast(String s){
+    // Helper method to display a Toast message
+    private void displayToast(String message) {
+        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
     }
 
+    // Method to show the forgot password dialog
     private void showForgotPasswordDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Reset password");
+        builder.setTitle("Reset Password");
 
         View view = LayoutInflater.from(this).inflate(R.layout.forgotpassword, null);
         builder.setView(view);
@@ -214,7 +223,4 @@ public class MainActivity extends AppCompatActivity {
 
         dialog.show();
     }
-
-
-    }
-
+}
