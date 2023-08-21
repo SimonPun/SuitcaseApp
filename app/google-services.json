@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "315387309180",
+    "project_id": "suitcaseapp-c7c32",
+    "storage_bucket": "suitcaseapp-c7c32.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315387309180:android:2c6119952bdaf28047adf9",
+        "android_client_info": {
+          "package_name": "com.jivanpun.suitcaseapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "315387309180-fptlcbdullgn884ebib90ckl6q33gu95.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jivanpun.suitcaseapp",
+            "certificate_hash": "71b13a5e5c3b0220393e1d4a339e34bce087b63f"
+          }
+        },
+        {
+          "client_id": "315387309180-6fm29ae42qijsj84bn9kknadu5j6tpoh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAM300McL0ItIcha0-H_BCMTRM94nb1Syk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "315387309180-6fm29ae42qijsj84bn9kknadu5j6tpoh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
