@@ -4,6 +4,8 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -11,6 +13,8 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar; // Import the Toolbar class
+import androidx.core.app.NavUtils;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -21,10 +25,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class HomePage extends AppCompatActivity {
-    // Firebase Authentication instance
     private FirebaseAuth auth;
-
-    // Google Sign-In client
     private GoogleSignInClient googleSignInClient;
 
     @Override
@@ -32,68 +33,95 @@ public class HomePage extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_page);
 
-        // Initialize Firebase Authentication
         auth = FirebaseAuth.getInstance();
-
-        // Initialize Google Sign-In client
         googleSignInClient = GoogleSignIn.getClient(this, GoogleSignInOptions.DEFAULT_SIGN_IN);
 
-        // Get the currently signed-in user
-        FirebaseUser currentUser = auth.getCurrentUser();
+        // Set up the app bar
+        setUpAppBar();
 
-        // Display user's email in the welcome message
+        FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser != null) {
             String registeredEmail = currentUser.getEmail();
-
-            TextView usernameTextView = findViewById(R.id.usernameTextView);
-            usernameTextView.setText("Welcome " + registeredEmail);
         }
 
-        // Set click listener for the logout button
-        Button logoutButton = findViewById(R.id.logoutButton);
-        logoutButton.setOnClickListener(new View.OnClickListener() {
+
+    }
+
+    private void setUpAppBar() {
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_item, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_home) {
+            // Handle Home option click
+            return true;
+        } else if (id == R.id.action_dashboard) {
+            // Handle Dashboard option click
+            return true;
+        } else if (id == R.id.action_notification) {
+            // Handle Notifications option click
+            // Implement your notifications logic here
+            return true;
+        } else if (id == R.id.action_logout) {
+            showLogoutConfirmationDialog();
+            return true;
+        } else if (id == android.R.id.home) {
+            // Handle the Up button navigation
+            onBackPressed();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void showLogoutConfirmationDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Confirm Logout");
+        builder.setMessage("Are you sure you want to log out?");
+
+        builder.setPositiveButton("Logout", new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                // Create a confirmation dialog
-                AlertDialog.Builder builder = new AlertDialog.Builder(HomePage.this);
-                builder.setTitle("Confirm Logout");
-                builder.setMessage("Are you sure you want to log out?");
-
-
-                builder.setPositiveButton("Logout", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialogInterface, int i) {
+                // Sign out from Google Sign-In and Firebase Authentication
+                googleSignInClient.signOut().addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        // Sign out from Google Sign-In and Firebase Authentication
-                        googleSignInClient.signOut().addOnCompleteListener(new OnCompleteListener<Void>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
-                                if (task.isSuccessful()) {
-                                    auth.signOut();
-                                    // Show a toast message indicating successful logout
-                                    Toast.makeText(getApplicationContext(), "Logged out Successful", Toast.LENGTH_SHORT).show();
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            auth.signOut();
+                            // Show a toast message indicating successful logout
+                            Toast.makeText(getApplicationContext(), "Logged out Successfully", Toast.LENGTH_SHORT).show();
 
-                                    // Navigate to the main activity and finish this activity
-                                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                                    startActivity(intent);
-                                    finish();
-                                }
-                            }
-                        });
+                            // Navigate to the main activity and finish this activity
+                            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                            startActivity(intent);
+                            finish();
+                        }
                     }
                 });
-
-                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        // Dismiss the dialog (cancel logout)
-                        dialogInterface.dismiss();
-                    }
-                });
-
-                // Show the dialog
-                AlertDialog dialog = builder.create();
-                dialog.show();
             }
         });
+
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                // Dismiss the dialog (cancel logout)
+                dialogInterface.dismiss();
+            }
+        });
+
+        // Show the dialog
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 }

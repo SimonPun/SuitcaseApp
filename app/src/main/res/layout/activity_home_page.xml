@@ -7,44 +7,26 @@
     android:layout_height="match_parent"
     tools:context=".HomePage">
 
-    <!-- User Profile Section -->
-    <LinearLayout
-        android:id="@+id/profileLayout"
+    <!-- App Bar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/logoutButton"
-        app:layout_constraintVertical_chainStyle="packed"
-        android:layout_marginTop="150dp">
+        tools:ignore="MissingConstraints">
 
-        <TextView
-            android:id="@+id/usernameTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:text="John Doe" />
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            app:title="Home Page"
+            app:titleTextColor="@android:color/white"
+            app:layout_scrollFlags="scroll|enterAlways" />
+    </com.google.android.material.appbar.AppBarLayout>
 
-        <!-- Add more user profile information here if needed -->
-    </LinearLayout>
 
     <!-- Logout Button -->
-    <Button
-        android:id="@+id/logoutButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Logout"
-        android:backgroundTint="@color/blue"
-        android:textColor="@android:color/white"
-        android:elevation="4dp"
-        app:layout_constraintTop_toBottomOf="@+id/profileLayout"
-        app:layout_constraintBottom_toTopOf="@+id/guidelineCenter"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVertical_bias="0.5"
-        android:layout_marginTop="150dp" />
+
 
     <!-- Guideline to create spacing -->
     <androidx.constraintlayout.widget.Guideline
