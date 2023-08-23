@@ -1,32 +1,33 @@
 package com.jivanpun.suitcaseapp;
 
-import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar; // Import the Toolbar class
-import androidx.core.app.NavUtils;
-
+import androidx.appcompat.widget.Toolbar;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class HomePage extends AppCompatActivity {
+
     private FirebaseAuth auth;
     private GoogleSignInClient googleSignInClient;
+    private FloatingActionButton floatingActionButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,12 +40,22 @@ public class HomePage extends AppCompatActivity {
         // Set up the app bar
         setUpAppBar();
 
+        // Find the floating action button
+        floatingActionButton = findViewById(R.id.fab);
+
+        // Set up the click listener for the floating action button
+        floatingActionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Show the custom dialog
+                showCustomDialog();
+            }
+        });
+
         FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser != null) {
             String registeredEmail = currentUser.getEmail();
         }
-
-
     }
 
     private void setUpAppBar() {
@@ -66,13 +77,7 @@ public class HomePage extends AppCompatActivity {
         if (id == R.id.action_home) {
             // Handle Home option click
             return true;
-        } else if (id == R.id.action_dashboard) {
-            // Handle Dashboard option click
-            return true;
-        } else if (id == R.id.action_notification) {
-            // Handle Notifications option click
-            // Implement your notifications logic here
-            return true;
+
         } else if (id == R.id.action_logout) {
             showLogoutConfirmationDialog();
             return true;
@@ -84,6 +89,33 @@ public class HomePage extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
+    private void showCustomDialog() {
+        // Create a dialog instance
+        Dialog dialog = new Dialog(this);
+
+        // Set the custom layout to the dialog
+        dialog.setContentView(R.layout.additem_menu);
+
+        // Adjust the width of the dialog's window
+        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+
+        // Find the "Save" button in the dialog
+        Button saveButton = dialog.findViewById(R.id.save_destination_btn);
+        saveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Handle the Save button click (you can implement your logic here)
+
+                // Dismiss the dialog after handling the click
+                dialog.dismiss();
+            }
+        });
+
+        // Show the dialog
+        dialog.show();
+    }
+
 
     private void showLogoutConfirmationDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
