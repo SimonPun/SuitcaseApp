@@ -61,7 +61,6 @@ public class HomePage extends AppCompatActivity {
     private void setUpAppBar() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
     @Override
