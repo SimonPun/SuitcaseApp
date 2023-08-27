@@ -58,7 +58,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Forgot Password?"
-        android:textColor="@color/black"
+        android:textColor="@color/secondaryColor"
         android:textSize="15dp"
         android:textStyle="bold"
         tools:ignore="TextSizeCheck" />
@@ -85,7 +85,7 @@
             android:text="Don't have an account?"
             android:textSize="15dp"
             android:textStyle="bold"
-            android:textColor="@color/black"
+            android:textColor="@color/grey"
             tools:ignore="TextSizeCheck" />
 
         <TextView
@@ -94,7 +94,7 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="10dp"
             android:text="Sign Up"
-            android:textColor="@color/blue"
+            android:textColor="@color/secondaryColor"
             android:textSize="15dp"
             android:textStyle="bold"
             tools:ignore="TextSizeCheck" />

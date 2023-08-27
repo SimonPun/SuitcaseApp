@@ -100,7 +100,7 @@ public class HomePage extends AppCompatActivity {
         dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
         // Find the "Save" button in the dialog
-        Button saveButton = dialog.findViewById(R.id.save_destination_btn);
+        Button saveButton = dialog.findViewById(R.id.saveButton);
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
