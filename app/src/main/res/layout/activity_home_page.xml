@@ -5,7 +5,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".HomePage">
+    tools:context=".HomePage"
+    tools:ignore="ExtraText">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        />
 
     <!-- App Bar -->
     <com.google.android.material.appbar.AppBarLayout
@@ -23,7 +31,6 @@
             app:layout_scrollFlags="scroll|enterAlways" />
     </com.google.android.material.appbar.AppBarLayout>
 
-
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
@@ -36,7 +43,8 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:src="@drawable/baseline_add_circle_outline_24"
-        />
+        android:contentDescription="Add New Item"
+    />
 
     <!-- Guideline to create spacing -->
     <androidx.constraintlayout.widget.Guideline
@@ -47,6 +55,5 @@
         app:layout_constraintGuide_percent="0.32" />
 
     <!-- Bottom Navigation View -->
-
 
 </RelativeLayout>

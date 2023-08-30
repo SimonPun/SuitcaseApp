@@ -41,4 +41,8 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation ("com.google.android.gms:play-services-auth:20.6.0")
     implementation ("com.airbnb.android:lottie:3.4.4")
+    implementation ("androidx.recyclerview:recyclerview:1.2.1")
+    implementation ("androidx.recyclerview:recyclerview:your_recyclerview_version")
+    implementation ("androidx.cardview:cardview:your_cardview_version")
+
 }
