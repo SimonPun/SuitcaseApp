@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -32,15 +33,15 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.MetadataChanges;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestoreException.Code;
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentChange.Type;
-import com.google.firebase.firestore.Query;
 
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -82,6 +83,23 @@ public class HomePage extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         itemsAdapter = new ItemsAdapter(itemsList);
         recyclerView.setAdapter(itemsAdapter);
+
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(
+                0, ItemTouchHelper.LEFT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                showDeleteConfirmationDialog(position);
+            }
+        });
+        itemTouchHelper.attachToRecyclerView(recyclerView);
 
         FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser != null) {
@@ -240,6 +258,36 @@ public class HomePage extends AppCompatActivity {
         dialog.show();
     }
 
+    private void showDeleteConfirmationDialog(final int position) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Confirm Delete");
+        builder.setMessage("Are you sure you want to delete this item?");
+
+        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                itemsAdapter.removeItem(position);
+                showToast("Item deleted successfully!");
+                dialogInterface.dismiss();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                itemsAdapter.notifyItemChanged(position);
+                dialogInterface.dismiss();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
     class ItemsAdapter extends RecyclerView.Adapter<ItemsAdapter.ViewHolder> {
 
         private List<Map<String, Object>> itemsList;
@@ -268,6 +316,11 @@ public class HomePage extends AppCompatActivity {
         @Override
         public int getItemCount() {
             return itemsList.size();
+        }
+
+        public void removeItem(int position) {
+            itemsList.remove(position);
+            notifyItemRemoved(position);
         }
 
         class ViewHolder extends RecyclerView.ViewHolder {
