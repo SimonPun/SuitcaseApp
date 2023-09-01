@@ -31,20 +31,13 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.EventListener;
-import com.google.firebase.firestore.MetadataChanges;
 import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestoreException.Code;
-import com.google.firebase.firestore.DocumentChange;
-import com.google.firebase.firestore.DocumentChange.Type;
-
 import com.google.android.material.textfield.TextInputEditText;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -64,13 +57,10 @@ public class HomePage extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_page);
-
         auth = FirebaseAuth.getInstance();
         googleSignInClient = GoogleSignIn.getClient(this, GoogleSignInOptions.DEFAULT_SIGN_IN);
         db = FirebaseFirestore.getInstance();
-
         setUpAppBar();
-
         floatingActionButton = findViewById(R.id.fab);
         floatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -78,14 +68,12 @@ public class HomePage extends AppCompatActivity {
                 showCustomDialog();
             }
         });
-
         RecyclerView recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         itemsAdapter = new ItemsAdapter(itemsList);
         recyclerView.setAdapter(itemsAdapter);
-
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(
-                0, ItemTouchHelper.LEFT) {
+                0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView,
                                   @NonNull RecyclerView.ViewHolder viewHolder,
@@ -96,15 +84,10 @@ public class HomePage extends AppCompatActivity {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
-                showDeleteConfirmationDialog(position);
+                deleteItem(position);
             }
         });
         itemTouchHelper.attachToRecyclerView(recyclerView);
-
-        FirebaseUser currentUser = auth.getCurrentUser();
-        if (currentUser != null) {
-            String registeredEmail = currentUser.getEmail();
-        }
     }
 
     @Override
@@ -121,7 +104,6 @@ public class HomePage extends AppCompatActivity {
 
     private void startItemsListener() {
         Query itemsQuery = db.collection("Items");
-
         itemsListener = itemsQuery.addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(QuerySnapshot queryDocumentSnapshots, FirebaseFirestoreException e) {
@@ -129,10 +111,10 @@ public class HomePage extends AppCompatActivity {
                     Toast.makeText(HomePage.this, "Error fetching items: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     return;
                 }
-
                 itemsList.clear();
                 for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
                     Map<String, Object> itemData = documentSnapshot.getData();
+                    itemData.put("docRef", documentSnapshot.getReference());
                     itemsList.add(itemData);
                 }
                 itemsAdapter.notifyDataSetChanged();
@@ -161,7 +143,6 @@ public class HomePage extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
-
         if (id == R.id.action_home) {
             return true;
         } else if (id == R.id.action_logout) {
@@ -171,7 +152,6 @@ public class HomePage extends AppCompatActivity {
             onBackPressed();
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -179,28 +159,20 @@ public class HomePage extends AppCompatActivity {
         Dialog dialog = new Dialog(this);
         dialog.setContentView(R.layout.additem_menu);
         dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-
         TextInputEditText inputDesName = dialog.findViewById(R.id.nameEditText);
         TextInputEditText inputNote = dialog.findViewById(R.id.descriptionEditText);
-
         Button saveButton = dialog.findViewById(R.id.saveButton);
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String itemName = inputDesName.getText().toString().trim();
                 String note = inputNote.getText().toString().trim();
-
-                if (itemName.isEmpty() && note.isEmpty()) {
+                if (itemName.isEmpty() || note.isEmpty()) {
                     Toast.makeText(HomePage.this, "Item name and description are required!", Toast.LENGTH_SHORT).show();
-                } else if (itemName.isEmpty()) {
-                    Toast.makeText(HomePage.this, "Item name is required!", Toast.LENGTH_SHORT).show();
-                } else if (note.isEmpty()) {
-                    Toast.makeText(HomePage.this, "Description is required!", Toast.LENGTH_SHORT).show();
                 } else {
                     Map<String, Object> itemsData = new HashMap<>();
                     itemsData.put("Items Name", itemName);
                     itemsData.put("notes", note);
-
                     db.collection("Items")
                             .add(itemsData)
                             .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
@@ -219,7 +191,6 @@ public class HomePage extends AppCompatActivity {
                 }
             }
         });
-
         dialog.show();
     }
 
@@ -227,7 +198,6 @@ public class HomePage extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Confirm Logout");
         builder.setMessage("Are you sure you want to log out?");
-
         builder.setPositiveButton("Logout", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
@@ -237,7 +207,6 @@ public class HomePage extends AppCompatActivity {
                         if (task.isSuccessful()) {
                             auth.signOut();
                             Toast.makeText(getApplicationContext(), "Logged out Successfully", Toast.LENGTH_SHORT).show();
-
                             Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                             startActivity(intent);
                             finish();
@@ -246,42 +215,33 @@ public class HomePage extends AppCompatActivity {
                 });
             }
         });
-
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 dialogInterface.dismiss();
             }
         });
-
         AlertDialog dialog = builder.create();
         dialog.show();
     }
 
-    private void showDeleteConfirmationDialog(final int position) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Confirm Delete");
-        builder.setMessage("Are you sure you want to delete this item?");
-
-        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                itemsAdapter.removeItem(position);
-                showToast("Item deleted successfully!");
-                dialogInterface.dismiss();
-            }
-        });
-
-        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                itemsAdapter.notifyItemChanged(position);
-                dialogInterface.dismiss();
-            }
-        });
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
+    private void deleteItem(int position) {
+        Map<String, Object> deletedItem = itemsList.get(position);
+        DocumentReference itemRef = (DocumentReference) deletedItem.get("docRef");
+        itemRef.delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        showToast("Item deleted successfully!");
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        showToast("Failed to delete item: " + e.getMessage());
+                    }
+                });
+        itemsAdapter.removeItem(position);
     }
 
     private void showToast(String message) {
@@ -289,7 +249,6 @@ public class HomePage extends AppCompatActivity {
     }
 
     class ItemsAdapter extends RecyclerView.Adapter<ItemsAdapter.ViewHolder> {
-
         private List<Map<String, Object>> itemsList;
 
         ItemsAdapter(List<Map<String, Object>> itemsList) {
@@ -308,7 +267,6 @@ public class HomePage extends AppCompatActivity {
             Map<String, Object> itemData = itemsList.get(position);
             String itemName = (String) itemData.get("Items Name");
             String itemNote = (String) itemData.get("notes");
-
             holder.nameTextView.setText(itemName);
             holder.noteTextView.setText(itemNote);
         }
