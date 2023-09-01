@@ -73,7 +73,7 @@ public class HomePage extends AppCompatActivity {
         itemsAdapter = new ItemsAdapter(itemsList);
         recyclerView.setAdapter(itemsAdapter);
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(
-                0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+                0,  ItemTouchHelper.RIGHT) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView,
                                   @NonNull RecyclerView.ViewHolder viewHolder,
@@ -226,22 +226,39 @@ public class HomePage extends AppCompatActivity {
     }
 
     private void deleteItem(int position) {
-        Map<String, Object> deletedItem = itemsList.get(position);
-        DocumentReference itemRef = (DocumentReference) deletedItem.get("docRef");
-        itemRef.delete()
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        showToast("Item deleted successfully!");
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        showToast("Failed to delete item: " + e.getMessage());
-                    }
-                });
-        itemsAdapter.removeItem(position);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Confirm Deletion");
+        builder.setMessage("Are you sure you want to delete this item?");
+        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                Map<String, Object> deletedItem = itemsList.get(position);
+                DocumentReference itemRef = (DocumentReference) deletedItem.get("docRef");
+                itemRef.delete()
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                showToast("Item deleted successfully!");
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                showToast("Failed to delete item: " + e.getMessage());
+                            }
+                        });
+                itemsAdapter.removeItem(position);
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+                itemsAdapter.notifyItemChanged(position); // Refresh the item view
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     private void showToast(String message) {
