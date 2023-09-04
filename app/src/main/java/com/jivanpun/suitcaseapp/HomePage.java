@@ -1,14 +1,17 @@
 package com.jivanpun.suitcaseapp;
 
+import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -19,6 +22,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -27,6 +31,8 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -37,7 +43,6 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.android.material.textfield.TextInputEditText;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,7 +57,9 @@ public class HomePage extends AppCompatActivity {
     private ItemsAdapter itemsAdapter;
     private List<Map<String, Object>> itemsList = new ArrayList<>();
     private ListenerRegistration itemsListener;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,7 +80,7 @@ public class HomePage extends AppCompatActivity {
         itemsAdapter = new ItemsAdapter(itemsList);
         recyclerView.setAdapter(itemsAdapter);
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(
-                0,  ItemTouchHelper.RIGHT) {
+                0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) { // Handle both left and right swipes
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView,
                                   @NonNull RecyclerView.ViewHolder viewHolder,
@@ -84,10 +91,26 @@ public class HomePage extends AppCompatActivity {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
-                deleteItem(position);
+                if (direction == ItemTouchHelper.LEFT) {
+                    // Handle left swipe (delete)
+                    deleteItem(position);
+                } else if (direction == ItemTouchHelper.RIGHT) {
+                    // Handle right swipe (edit)
+                    editItem(position);
+                }
             }
         });
         itemTouchHelper.attachToRecyclerView(recyclerView);
+
+        // Initialize SwipeRefreshLayout
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                // Refresh the data when the user swipes down
+                refreshData();
+            }
+        });
     }
 
     @Override
@@ -109,6 +132,7 @@ public class HomePage extends AppCompatActivity {
             public void onEvent(QuerySnapshot queryDocumentSnapshots, FirebaseFirestoreException e) {
                 if (e != null) {
                     Toast.makeText(HomePage.this, "Error fetching items: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    swipeRefreshLayout.setRefreshing(false); // Stop the refresh animation on error
                     return;
                 }
                 itemsList.clear();
@@ -118,6 +142,7 @@ public class HomePage extends AppCompatActivity {
                     itemsList.add(itemData);
                 }
                 itemsAdapter.notifyDataSetChanged();
+                swipeRefreshLayout.setRefreshing(false); // Stop the refresh animation on success
             }
         });
     }
@@ -224,6 +249,68 @@ public class HomePage extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
     }
+    private void editItem(int position) {
+        Map<String, Object> itemData = itemsList.get(position);
+        String itemName = (String) itemData.get("Items Name");
+        String itemNote = (String) itemData.get("notes");
+
+        // Create an edit dialog using the current activity's context
+        Dialog editDialog = new Dialog(this); // "this" should be an activity context
+        editDialog.setContentView(R.layout.edit_item_dialog); // Reuse the add item layout
+        TextInputLayout nameInputLayout = editDialog.findViewById(R.id.nameInputLayout);
+        TextInputLayout descriptionInputLayout = editDialog.findViewById(R.id.descriptionInputLayout);
+        TextInputEditText editNameEditText = editDialog.findViewById(R.id.nameEditText);
+        TextInputEditText editDescriptionEditText = editDialog.findViewById(R.id.descriptionEditText);
+        Button saveEditButton = editDialog.findViewById(R.id.saveButton);
+
+        // You can also change button text, etc., to indicate editing.
+
+        // Populate the dialog with the current item's data
+        editNameEditText.setText(itemName);
+        editDescriptionEditText.setText(itemNote);
+
+        // Set up a click listener for the save button
+        saveEditButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Get the edited data from the dialog
+                String editedName = editNameEditText.getText().toString().trim();
+                String editedDescription = editDescriptionEditText.getText().toString().trim();
+
+                if (editedName.isEmpty() || editedDescription.isEmpty()) {
+                    Toast.makeText(getApplicationContext(), "Item name and description are required!", Toast.LENGTH_SHORT).show();
+                } else {
+                    // Update the item's data in the database (Firestore) here
+                    DocumentReference itemRef = (DocumentReference) itemData.get("docRef");
+                    Map<String, Object> updatedData = new HashMap<>();
+                    updatedData.put("Items Name", editedName);
+                    updatedData.put("notes", editedDescription);
+
+                    itemRef.update(updatedData)
+                            .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                @Override
+                                public void onSuccess(Void aVoid) {
+                                    showToast("Item updated successfully!");
+                                    // Dismiss the dialog
+                                    editDialog.dismiss();
+                                    // Optionally, you can notify the adapter to refresh the RecyclerView
+                                    itemsAdapter.notifyItemChanged(position);
+                                }
+                            })
+                            .addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    showToast("Failed to update item: " + e.getMessage());
+                                }
+                            });
+                }
+            }
+        });
+
+        // Show the edit dialog
+        editDialog.show();
+    }
+
 
     private void deleteItem(int position) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -307,5 +394,10 @@ public class HomePage extends AppCompatActivity {
                 noteTextView = itemView.findViewById(R.id.noteTextView);
             }
         }
+    }
+
+    private void refreshData() {
+        // This method is called when the user swipes down to refresh
+        startItemsListener();
     }
 }

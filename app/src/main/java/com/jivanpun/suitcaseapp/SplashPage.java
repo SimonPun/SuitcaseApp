@@ -54,9 +54,9 @@ public class SplashPage extends AppCompatActivity {
                             startActivity(mainIntent);
                             finish();
                         }
-                    }, 2800); // Delay before navigating to the Login Page
+                    }, 2500); // Delay before navigating to the Login Page
                 }
-            }, 300); // Initial delay before showing the splash animation
+            }, 100); // Initial delay before showing the splash animation
         }
     }
 }
