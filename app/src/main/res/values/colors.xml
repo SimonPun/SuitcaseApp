@@ -16,5 +16,6 @@
     <!-- <color name="optionalColor">#37A9DB</color>-->
     <color name="optionalColor">#2D2E4A</color>
     <color name="pe">#EADDFF</color>
+    <color name="colorDeleteBackground">#F44336</color> <!-- Change to your desired delete background color -->
 
 </resources>

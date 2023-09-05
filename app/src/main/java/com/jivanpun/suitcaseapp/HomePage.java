@@ -165,10 +165,12 @@ public class HomePage extends AppCompatActivity {
         return true;
     }
 
+    //menu itemss
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_home) {
+        if (id == R.id.action_profile) {
+
             return true;
         } else if (id == R.id.action_logout) {
             showLogoutConfirmationDialog();
@@ -186,18 +188,22 @@ public class HomePage extends AppCompatActivity {
         dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         TextInputEditText inputDesName = dialog.findViewById(R.id.nameEditText);
         TextInputEditText inputNote = dialog.findViewById(R.id.descriptionEditText);
+        TextInputEditText inputPrice = dialog.findViewById(R.id.priceEditText);
         Button saveButton = dialog.findViewById(R.id.saveButton);
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String itemName = inputDesName.getText().toString().trim();
                 String note = inputNote.getText().toString().trim();
-                if (itemName.isEmpty() || note.isEmpty()) {
-                    Toast.makeText(HomePage.this, "Item name and description are required!", Toast.LENGTH_SHORT).show();
+                String itemPrice = inputPrice.getText().toString().trim(); // Get price input
+
+                if (itemName.isEmpty() || note.isEmpty() || itemPrice.isEmpty()) {
+                    Toast.makeText(HomePage.this, "Item name, description, and price are required!", Toast.LENGTH_SHORT).show();
                 } else {
                     Map<String, Object> itemsData = new HashMap<>();
                     itemsData.put("Items Name", itemName);
                     itemsData.put("notes", note);
+                    itemsData.put("price", itemPrice);
                     db.collection("Items")
                             .add(itemsData)
                             .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
@@ -249,25 +255,28 @@ public class HomePage extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
     }
+
     private void editItem(int position) {
         Map<String, Object> itemData = itemsList.get(position);
         String itemName = (String) itemData.get("Items Name");
         String itemNote = (String) itemData.get("notes");
+        String itemPrice = (String) itemData.get("price"); // Get price
 
         // Create an edit dialog using the current activity's context
-        Dialog editDialog = new Dialog(this); // "this" should be an activity context
-        editDialog.setContentView(R.layout.edit_item_dialog); // Reuse the add item layout
+        Dialog editDialog = new Dialog(this);
+        editDialog.setContentView(R.layout.edit_item_dialog);
         TextInputLayout nameInputLayout = editDialog.findViewById(R.id.nameInputLayout);
         TextInputLayout descriptionInputLayout = editDialog.findViewById(R.id.descriptionInputLayout);
+        TextInputLayout priceInputLayout = editDialog.findViewById(R.id.priceInputLayout); // Added price input layout
         TextInputEditText editNameEditText = editDialog.findViewById(R.id.nameEditText);
         TextInputEditText editDescriptionEditText = editDialog.findViewById(R.id.descriptionEditText);
+        TextInputEditText editPriceEditText = editDialog.findViewById(R.id.priceEditText); // Added price input
         Button saveEditButton = editDialog.findViewById(R.id.saveButton);
-
-        // You can also change button text, etc., to indicate editing.
 
         // Populate the dialog with the current item's data
         editNameEditText.setText(itemName);
         editDescriptionEditText.setText(itemNote);
+        editPriceEditText.setText(itemPrice); // Set the price
 
         // Set up a click listener for the save button
         saveEditButton.setOnClickListener(new View.OnClickListener() {
@@ -276,15 +285,17 @@ public class HomePage extends AppCompatActivity {
                 // Get the edited data from the dialog
                 String editedName = editNameEditText.getText().toString().trim();
                 String editedDescription = editDescriptionEditText.getText().toString().trim();
+                String editedPrice = editPriceEditText.getText().toString().trim(); // Get edited price
 
-                if (editedName.isEmpty() || editedDescription.isEmpty()) {
-                    Toast.makeText(getApplicationContext(), "Item name and description are required!", Toast.LENGTH_SHORT).show();
+                if (editedName.isEmpty() || editedDescription.isEmpty() || editedPrice.isEmpty()) {
+                    Toast.makeText(getApplicationContext(), "Item name, description, and price are required!", Toast.LENGTH_SHORT).show();
                 } else {
                     // Update the item's data in the database (Firestore) here
                     DocumentReference itemRef = (DocumentReference) itemData.get("docRef");
                     Map<String, Object> updatedData = new HashMap<>();
                     updatedData.put("Items Name", editedName);
                     updatedData.put("notes", editedDescription);
+                    updatedData.put("price", editedPrice); // Include the price field in the update
 
                     itemRef.update(updatedData)
                             .addOnSuccessListener(new OnSuccessListener<Void>() {
@@ -310,7 +321,6 @@ public class HomePage extends AppCompatActivity {
         // Show the edit dialog
         editDialog.show();
     }
-
 
     private void deleteItem(int position) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -370,8 +380,10 @@ public class HomePage extends AppCompatActivity {
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             Map<String, Object> itemData = itemsList.get(position);
             String itemName = (String) itemData.get("Items Name");
+            String itemPrice = (String) itemData.get("price"); // Replace "price" with the actual field name
             String itemNote = (String) itemData.get("notes");
             holder.nameTextView.setText(itemName);
+            holder.priceTextView.setText("Price: " + itemPrice); // Populate the "price" field
             holder.noteTextView.setText(itemNote);
         }
 
@@ -386,11 +398,12 @@ public class HomePage extends AppCompatActivity {
         }
 
         class ViewHolder extends RecyclerView.ViewHolder {
-            TextView nameTextView, noteTextView;
+            TextView nameTextView, priceTextView, noteTextView;
 
             ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 nameTextView = itemView.findViewById(R.id.nameTextView);
+                priceTextView = itemView.findViewById(R.id.priceTextView);
                 noteTextView = itemView.findViewById(R.id.noteTextView);
             }
         }
