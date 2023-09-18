@@ -14,8 +14,10 @@
         android:theme="@style/Theme.SuitcaseApp"
         tools:targetApi="31">
         <activity
-            android:name=".Profilepage"
-            android:exported="false" />
+            android:name=".PurchasePage"
+            android:label="Purchase Page">
+        </activity>
+
         <activity
             android:name=".RegisterPage"
             android:exported="false" />

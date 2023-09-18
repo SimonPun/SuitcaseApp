@@ -1,18 +1,16 @@
 package com.jivanpun.suitcaseapp;
 
-import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AlphaAnimation;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -59,7 +57,6 @@ public class HomePage extends AppCompatActivity {
     private ListenerRegistration itemsListener;
     private SwipeRefreshLayout swipeRefreshLayout;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,7 +77,7 @@ public class HomePage extends AppCompatActivity {
         itemsAdapter = new ItemsAdapter(itemsList);
         recyclerView.setAdapter(itemsAdapter);
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(
-                0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) { // Handle both left and right swipes
+                0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView,
                                   @NonNull RecyclerView.ViewHolder viewHolder,
@@ -92,22 +89,18 @@ public class HomePage extends AppCompatActivity {
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
                 if (direction == ItemTouchHelper.LEFT) {
-                    // Handle left swipe (delete)
                     deleteItem(position);
                 } else if (direction == ItemTouchHelper.RIGHT) {
-                    // Handle right swipe (edit)
                     editItem(position);
                 }
             }
         });
         itemTouchHelper.attachToRecyclerView(recyclerView);
 
-        // Initialize SwipeRefreshLayout
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                // Refresh the data when the user swipes down
                 refreshData();
             }
         });
@@ -126,25 +119,31 @@ public class HomePage extends AppCompatActivity {
     }
 
     private void startItemsListener() {
-        Query itemsQuery = db.collection("Items");
-        itemsListener = itemsQuery.addSnapshotListener(new EventListener<QuerySnapshot>() {
-            @Override
-            public void onEvent(QuerySnapshot queryDocumentSnapshots, FirebaseFirestoreException e) {
-                if (e != null) {
-                    Toast.makeText(HomePage.this, "Error fetching items: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    swipeRefreshLayout.setRefreshing(false); // Stop the refresh animation on error
-                    return;
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser != null) {
+            String currentUserId = currentUser.getUid();
+            Query itemsQuery = db.collection("Items")
+                    .whereEqualTo("userId", currentUserId);
+
+            itemsListener = itemsQuery.addSnapshotListener(new EventListener<QuerySnapshot>() {
+                @Override
+                public void onEvent(QuerySnapshot queryDocumentSnapshots, FirebaseFirestoreException e) {
+                    if (e != null) {
+                        Toast.makeText(HomePage.this, "Error fetching items: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        swipeRefreshLayout.setRefreshing(false);
+                        return;
+                    }
+                    itemsList.clear();
+                    for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+                        Map<String, Object> itemData = documentSnapshot.getData();
+                        itemData.put("docRef", documentSnapshot.getReference());
+                        itemsList.add(itemData);
+                    }
+                    itemsAdapter.notifyDataSetChanged();
+                    swipeRefreshLayout.setRefreshing(false);
                 }
-                itemsList.clear();
-                for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
-                    Map<String, Object> itemData = documentSnapshot.getData();
-                    itemData.put("docRef", documentSnapshot.getReference());
-                    itemsList.add(itemData);
-                }
-                itemsAdapter.notifyDataSetChanged();
-                swipeRefreshLayout.setRefreshing(false); // Stop the refresh animation on success
-            }
-        });
+            });
+        }
     }
 
     private void stopItemsListener() {
@@ -165,12 +164,14 @@ public class HomePage extends AppCompatActivity {
         return true;
     }
 
-    //menu itemss
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_profile) {
-
+            return true;
+        } else if (id == R.id.action_purchase) {
+            Intent purchaseIntent = new Intent(this, PurchasePage.class);
+            startActivity(purchaseIntent);
             return true;
         } else if (id == R.id.action_logout) {
             showLogoutConfirmationDialog();
@@ -183,46 +184,50 @@ public class HomePage extends AppCompatActivity {
     }
 
     private void showCustomDialog() {
-        Dialog dialog = new Dialog(this);
-        dialog.setContentView(R.layout.additem_menu);
-        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        TextInputEditText inputDesName = dialog.findViewById(R.id.nameEditText);
-        TextInputEditText inputNote = dialog.findViewById(R.id.descriptionEditText);
-        TextInputEditText inputPrice = dialog.findViewById(R.id.priceEditText);
-        Button saveButton = dialog.findViewById(R.id.saveButton);
-        saveButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String itemName = inputDesName.getText().toString().trim();
-                String note = inputNote.getText().toString().trim();
-                String itemPrice = inputPrice.getText().toString().trim(); // Get price input
-
-                if (itemName.isEmpty() || note.isEmpty() || itemPrice.isEmpty()) {
-                    Toast.makeText(HomePage.this, "Item name, description, and price are required!", Toast.LENGTH_SHORT).show();
-                } else {
-                    Map<String, Object> itemsData = new HashMap<>();
-                    itemsData.put("Items Name", itemName);
-                    itemsData.put("notes", note);
-                    itemsData.put("price", itemPrice);
-                    db.collection("Items")
-                            .add(itemsData)
-                            .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                                @Override
-                                public void onSuccess(DocumentReference documentReference) {
-                                    Toast.makeText(HomePage.this, "Item added!", Toast.LENGTH_SHORT).show();
-                                    dialog.dismiss();
-                                }
-                            })
-                            .addOnFailureListener(new OnFailureListener() {
-                                @Override
-                                public void onFailure(@NonNull Exception e) {
-                                    Toast.makeText(HomePage.this, "Failed to add item: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                }
-                            });
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser != null) {
+            Dialog dialog = new Dialog(this);
+            dialog.setContentView(R.layout.additem_menu);
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            TextInputEditText inputDesName = dialog.findViewById(R.id.nameEditText);
+            TextInputEditText inputNote = dialog.findViewById(R.id.descriptionEditText);
+            TextInputEditText inputPrice = dialog.findViewById(R.id.priceEditText);
+            Button saveButton = dialog.findViewById(R.id.saveButton);
+            saveButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    String itemName = inputDesName.getText().toString().trim();
+                    String note = inputNote.getText().toString().trim();
+                    String itemPrice = inputPrice.getText().toString().trim();
+                    if (itemName.isEmpty() || note.isEmpty() || itemPrice.isEmpty()) {
+                        Toast.makeText(HomePage.this, "Item name, description, and price are required!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        String currentUserId = currentUser.getUid();
+                        Map<String, Object> itemsData = new HashMap<>();
+                        itemsData.put("Items Name", itemName);
+                        itemsData.put("notes", note);
+                        itemsData.put("price", itemPrice);
+                        itemsData.put("userId", currentUserId);
+                        db.collection("Items")
+                                .add(itemsData)
+                                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                                    @Override
+                                    public void onSuccess(DocumentReference documentReference) {
+                                        Toast.makeText(HomePage.this, "Item added!", Toast.LENGTH_SHORT).show();
+                                        dialog.dismiss();
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        Toast.makeText(HomePage.this, "Failed to add item: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                    }
                 }
-            }
-        });
-        dialog.show();
+            });
+            dialog.show();
+        }
     }
 
     private void showLogoutConfirmationDialog() {
@@ -257,69 +262,58 @@ public class HomePage extends AppCompatActivity {
     }
 
     private void editItem(int position) {
-        Map<String, Object> itemData = itemsList.get(position);
-        String itemName = (String) itemData.get("Items Name");
-        String itemNote = (String) itemData.get("notes");
-        String itemPrice = (String) itemData.get("price"); // Get price
-
-        // Create an edit dialog using the current activity's context
-        Dialog editDialog = new Dialog(this);
-        editDialog.setContentView(R.layout.edit_item_dialog);
-        TextInputLayout nameInputLayout = editDialog.findViewById(R.id.nameInputLayout);
-        TextInputLayout descriptionInputLayout = editDialog.findViewById(R.id.descriptionInputLayout);
-        TextInputLayout priceInputLayout = editDialog.findViewById(R.id.priceInputLayout); // Added price input layout
-        TextInputEditText editNameEditText = editDialog.findViewById(R.id.nameEditText);
-        TextInputEditText editDescriptionEditText = editDialog.findViewById(R.id.descriptionEditText);
-        TextInputEditText editPriceEditText = editDialog.findViewById(R.id.priceEditText); // Added price input
-        Button saveEditButton = editDialog.findViewById(R.id.saveButton);
-
-        // Populate the dialog with the current item's data
-        editNameEditText.setText(itemName);
-        editDescriptionEditText.setText(itemNote);
-        editPriceEditText.setText(itemPrice); // Set the price
-
-        // Set up a click listener for the save button
-        saveEditButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Get the edited data from the dialog
-                String editedName = editNameEditText.getText().toString().trim();
-                String editedDescription = editDescriptionEditText.getText().toString().trim();
-                String editedPrice = editPriceEditText.getText().toString().trim(); // Get edited price
-
-                if (editedName.isEmpty() || editedDescription.isEmpty() || editedPrice.isEmpty()) {
-                    Toast.makeText(getApplicationContext(), "Item name, description, and price are required!", Toast.LENGTH_SHORT).show();
-                } else {
-                    // Update the item's data in the database (Firestore) here
-                    DocumentReference itemRef = (DocumentReference) itemData.get("docRef");
-                    Map<String, Object> updatedData = new HashMap<>();
-                    updatedData.put("Items Name", editedName);
-                    updatedData.put("notes", editedDescription);
-                    updatedData.put("price", editedPrice); // Include the price field in the update
-
-                    itemRef.update(updatedData)
-                            .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                @Override
-                                public void onSuccess(Void aVoid) {
-                                    showToast("Item updated successfully!");
-                                    // Dismiss the dialog
-                                    editDialog.dismiss();
-                                    // Optionally, you can notify the adapter to refresh the RecyclerView
-                                    itemsAdapter.notifyItemChanged(position);
-                                }
-                            })
-                            .addOnFailureListener(new OnFailureListener() {
-                                @Override
-                                public void onFailure(@NonNull Exception e) {
-                                    showToast("Failed to update item: " + e.getMessage());
-                                }
-                            });
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser != null) {
+            Map<String, Object> itemData = itemsList.get(position);
+            String itemName = (String) itemData.get("Items Name");
+            String itemNote = (String) itemData.get("notes");
+            String itemPrice = (String) itemData.get("price");
+            Dialog editDialog = new Dialog(this);
+            editDialog.setContentView(R.layout.edit_item_dialog);
+            TextInputLayout nameInputLayout = editDialog.findViewById(R.id.nameInputLayout);
+            TextInputLayout descriptionInputLayout = editDialog.findViewById(R.id.descriptionInputLayout);
+            TextInputLayout priceInputLayout = editDialog.findViewById(R.id.priceInputLayout);
+            TextInputEditText editNameEditText = editDialog.findViewById(R.id.nameEditText);
+            TextInputEditText editDescriptionEditText = editDialog.findViewById(R.id.descriptionEditText);
+            TextInputEditText editPriceEditText = editDialog.findViewById(R.id.priceEditText);
+            Button saveEditButton = editDialog.findViewById(R.id.saveButton);
+            editNameEditText.setText(itemName);
+            editDescriptionEditText.setText(itemNote);
+            editPriceEditText.setText(itemPrice);
+            saveEditButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    String editedName = editNameEditText.getText().toString().trim();
+                    String editedDescription = editDescriptionEditText.getText().toString().trim();
+                    String editedPrice = editPriceEditText.getText().toString().trim();
+                    if (editedName.isEmpty() || editedDescription.isEmpty() || editedPrice.isEmpty()) {
+                        Toast.makeText(getApplicationContext(), "Item name, description, and price are required!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        DocumentReference itemRef = (DocumentReference) itemData.get("docRef");
+                        Map<String, Object> updatedData = new HashMap<>();
+                        updatedData.put("Items Name", editedName);
+                        updatedData.put("notes", editedDescription);
+                        updatedData.put("price", editedPrice);
+                        itemRef.update(updatedData)
+                                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void aVoid) {
+                                        showToast("Item updated successfully!");
+                                        editDialog.dismiss();
+                                        itemsAdapter.notifyItemChanged(position);
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        showToast("Failed to update item: " + e.getMessage());
+                                    }
+                                });
+                    }
                 }
-            }
-        });
-
-        // Show the edit dialog
-        editDialog.show();
+            });
+            editDialog.show();
+        }
     }
 
     private void deleteItem(int position) {
@@ -351,7 +345,7 @@ public class HomePage extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 dialogInterface.dismiss();
-                itemsAdapter.notifyItemChanged(position); // Refresh the item view
+                itemsAdapter.notifyItemChanged(position);
             }
         });
         AlertDialog dialog = builder.create();
@@ -362,7 +356,12 @@ public class HomePage extends AppCompatActivity {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
+    private void refreshData() {
+        startItemsListener();
+    }
+
     class ItemsAdapter extends RecyclerView.Adapter<ItemsAdapter.ViewHolder> {
+
         private List<Map<String, Object>> itemsList;
 
         ItemsAdapter(List<Map<String, Object>> itemsList) {
@@ -380,10 +379,10 @@ public class HomePage extends AppCompatActivity {
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             Map<String, Object> itemData = itemsList.get(position);
             String itemName = (String) itemData.get("Items Name");
-            String itemPrice = (String) itemData.get("price"); // Replace "price" with the actual field name
+            String itemPrice = (String) itemData.get("price");
             String itemNote = (String) itemData.get("notes");
             holder.nameTextView.setText(itemName);
-            holder.priceTextView.setText("Price: " + itemPrice); // Populate the "price" field
+            holder.priceTextView.setText("Price: " + itemPrice);
             holder.noteTextView.setText(itemNote);
         }
 
@@ -392,25 +391,22 @@ public class HomePage extends AppCompatActivity {
             return itemsList.size();
         }
 
-        public void removeItem(int position) {
+        void removeItem(int position) {
             itemsList.remove(position);
             notifyItemRemoved(position);
         }
 
         class ViewHolder extends RecyclerView.ViewHolder {
-            TextView nameTextView, priceTextView, noteTextView;
+            TextView nameTextView;
+            TextView priceTextView;
+            TextView noteTextView;
 
-            ViewHolder(@NonNull View itemView) {
+            ViewHolder(View itemView) {
                 super(itemView);
                 nameTextView = itemView.findViewById(R.id.nameTextView);
                 priceTextView = itemView.findViewById(R.id.priceTextView);
                 noteTextView = itemView.findViewById(R.id.noteTextView);
             }
         }
-    }
-
-    private void refreshData() {
-        // This method is called when the user swipes down to refresh
-        startItemsListener();
     }
 }
