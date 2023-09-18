@@ -58,7 +58,6 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Forgot Password?"
-        android:textColor="@color/secondaryColor"
         android:textSize="15dp"
         android:textStyle="bold"
         tools:ignore="TextSizeCheck" />

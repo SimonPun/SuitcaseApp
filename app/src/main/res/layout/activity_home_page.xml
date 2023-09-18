@@ -23,11 +23,15 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <!-- SwipeRefreshLayout for refresh -->
+
+    <!-- Floating Action Button -->
+
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/appBarLayout">
+        android:layout_below="@id/appBarLayout"
+        android:layout_marginTop="-1dp">
 
         <!-- RecyclerView for displaying items -->
         <androidx.recyclerview.widget.RecyclerView
@@ -37,20 +41,16 @@
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <!-- Floating Action Button -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginStart="25dp"
-        android:layout_marginTop="25dp"
-        android:layout_marginEnd="30dp"
-        android:layout_marginBottom="30dp"
-        android:src="@drawable/baseline_add_24"
-        app:backgroundTint="@color/blue"
-        android:contentDescription="Add New Item" />
+        android:layout_margin="25dp"
+        android:contentDescription="Add New Item"
+        android:src="@drawable/add" />
+
 
     <!-- Guideline to create spacing -->
     <androidx.constraintlayout.widget.Guideline

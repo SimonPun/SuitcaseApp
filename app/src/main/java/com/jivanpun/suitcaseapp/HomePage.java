@@ -10,7 +10,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -29,7 +28,6 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -258,8 +256,22 @@ public class HomePage extends AppCompatActivity {
             }
         });
         AlertDialog dialog = builder.create();
+
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialogInterface) {
+                Button positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                Button negativeButton = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+
+                positiveButton.setTextColor(getResources().getColor(android.R.color.holo_red_light));
+
+                negativeButton.setTextColor(getResources().getColor(android.R.color.black));
+            }
+        });
+
         dialog.show();
     }
+
 
     private void editItem(int position) {
         FirebaseUser currentUser = auth.getCurrentUser();
@@ -270,9 +282,6 @@ public class HomePage extends AppCompatActivity {
             String itemPrice = (String) itemData.get("price");
             Dialog editDialog = new Dialog(this);
             editDialog.setContentView(R.layout.edit_item_dialog);
-            TextInputLayout nameInputLayout = editDialog.findViewById(R.id.nameInputLayout);
-            TextInputLayout descriptionInputLayout = editDialog.findViewById(R.id.descriptionInputLayout);
-            TextInputLayout priceInputLayout = editDialog.findViewById(R.id.priceInputLayout);
             TextInputEditText editNameEditText = editDialog.findViewById(R.id.nameEditText);
             TextInputEditText editDescriptionEditText = editDialog.findViewById(R.id.descriptionEditText);
             TextInputEditText editPriceEditText = editDialog.findViewById(R.id.priceEditText);
@@ -320,6 +329,8 @@ public class HomePage extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Confirm Deletion");
         builder.setMessage("Are you sure you want to delete this item?");
+
+        // Set the positive button (Delete) with a red color
         builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
@@ -341,6 +352,8 @@ public class HomePage extends AppCompatActivity {
                 itemsAdapter.removeItem(position);
             }
         });
+
+        // Set the negative button (Cancel) with a black color
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
@@ -348,9 +361,27 @@ public class HomePage extends AppCompatActivity {
                 itemsAdapter.notifyItemChanged(position);
             }
         });
+
         AlertDialog dialog = builder.create();
+
+        // Modify the button text colors
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialogInterface) {
+                Button positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                Button negativeButton = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+
+                // Set the text color for the Delete button (red)
+                positiveButton.setTextColor(getResources().getColor(android.R.color.holo_red_light));
+
+                // Set the text color for the Cancel button (black)
+                negativeButton.setTextColor(getResources().getColor(android.R.color.black));
+            }
+        });
+
         dialog.show();
     }
+
 
     private void showToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
