@@ -13,9 +13,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SuitcaseApp"
         tools:targetApi="31">
-        <activity
-            android:name=".PurchasePage"
-            android:label="Purchase Page">
+        <activity android:name=".PurchasePage">
+
         </activity>
 
         <activity

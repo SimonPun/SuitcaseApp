@@ -166,20 +166,25 @@ public class HomePage extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_profile) {
+            // Handle the Profile menu item
             return true;
         } else if (id == R.id.action_purchase) {
+            // Redirect to the PurchasePage activity
             Intent purchaseIntent = new Intent(this, PurchasePage.class);
             startActivity(purchaseIntent);
             return true;
         } else if (id == R.id.action_logout) {
+            // Handle the Logout menu item
             showLogoutConfirmationDialog();
             return true;
         } else if (id == android.R.id.home) {
+            // Handle the Up button
             onBackPressed();
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
+
 
     private void showCustomDialog() {
         FirebaseUser currentUser = auth.getCurrentUser();
