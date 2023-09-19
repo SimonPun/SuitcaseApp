@@ -3,6 +3,10 @@ package com.jivanpun.suitcaseapp;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -44,7 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HomePage extends AppCompatActivity {
+public class HomePage extends AppCompatActivity implements SensorEventListener {
 
     private FirebaseAuth auth;
     private GoogleSignInClient googleSignInClient;
@@ -54,6 +58,14 @@ public class HomePage extends AppCompatActivity {
     private List<Map<String, Object>> itemsList = new ArrayList<>();
     private ListenerRegistration itemsListener;
     private SwipeRefreshLayout swipeRefreshLayout;
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private float lastAcceleration = 0;
+    private float currentAcceleration = 0;
+    private static final float SHAKE_THRESHOLD = 5.0f;
+    private Map<String, Object> originalItemData;
+
+    private boolean isShakeEnabled = true; // Flag to enable/disable shake functionality
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,6 +114,24 @@ public class HomePage extends AppCompatActivity {
                 refreshData();
             }
         });
+
+        // Initialize accelerometer sensor
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        isShakeEnabled = true; // Enable shake functionality when resuming the activity
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        sensorManager.unregisterListener(this);
+        isShakeEnabled = false; // Disable shake functionality when pausing the activity
     }
 
     @Override
@@ -114,6 +144,29 @@ public class HomePage extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         stopItemsListener();
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER && isShakeEnabled) {
+            float x = event.values[0];
+            float y = event.values[1];
+            float z = event.values[2];
+
+            lastAcceleration = currentAcceleration;
+            currentAcceleration = (float) Math.sqrt(x * x + y * y + z * z);
+
+            float deltaAcceleration = currentAcceleration - lastAcceleration;
+
+            if (deltaAcceleration > SHAKE_THRESHOLD) {
+                undoEdit();
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Not used in this example
     }
 
     private void startItemsListener() {
@@ -184,7 +237,6 @@ public class HomePage extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-
 
     private void showCustomDialog() {
         FirebaseUser currentUser = auth.getCurrentUser();
@@ -277,10 +329,10 @@ public class HomePage extends AppCompatActivity {
         dialog.show();
     }
 
-
     private void editItem(int position) {
         FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser != null) {
+            originalItemData = itemsList.get(position);
             Map<String, Object> itemData = itemsList.get(position);
             String itemName = (String) itemData.get("Items Name");
             String itemNote = (String) itemData.get("notes");
@@ -334,8 +386,6 @@ public class HomePage extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Confirm Deletion");
         builder.setMessage("Are you sure you want to delete this item?");
-
-        // Set the positive button (Delete) with a red color
         builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
@@ -358,7 +408,6 @@ public class HomePage extends AppCompatActivity {
             }
         });
 
-        // Set the negative button (Cancel) with a black color
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
@@ -369,17 +418,13 @@ public class HomePage extends AppCompatActivity {
 
         AlertDialog dialog = builder.create();
 
-        // Modify the button text colors
         dialog.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
             public void onShow(DialogInterface dialogInterface) {
                 Button positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 Button negativeButton = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
 
-                // Set the text color for the Delete button (red)
                 positiveButton.setTextColor(getResources().getColor(android.R.color.holo_red_light));
-
-                // Set the text color for the Cancel button (black)
                 negativeButton.setTextColor(getResources().getColor(android.R.color.black));
             }
         });
@@ -387,13 +432,35 @@ public class HomePage extends AppCompatActivity {
         dialog.show();
     }
 
-
     private void showToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
     private void refreshData() {
         startItemsListener();
+    }
+
+    private void undoEdit() {
+        if (originalItemData != null) {
+            FirebaseUser currentUser = auth.getCurrentUser();
+            if (currentUser != null) {
+                DocumentReference itemRef = (DocumentReference) originalItemData.get("docRef");
+                itemRef.update(originalItemData)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                showToast("Edit undone successfully!");
+                                itemsAdapter.notifyDataSetChanged();
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                showToast("Failed to undo edit: " + e.getMessage());
+                            }
+                        });
+            }
+        }
     }
 
     class ItemsAdapter extends RecyclerView.Adapter<ItemsAdapter.ViewHolder> {
