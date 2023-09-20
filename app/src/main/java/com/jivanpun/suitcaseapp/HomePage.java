@@ -3,6 +3,7 @@ package com.jivanpun.suitcaseapp;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Paint;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -14,6 +15,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -492,18 +494,44 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
             return itemsList.size();
         }
 
+        // Inside your ItemsAdapter ViewHolder class
         public class ViewHolder extends RecyclerView.ViewHolder {
             public TextView nameTextView;
             public TextView priceTextView;
             public TextView noteTextView;
+            public CheckBox checkBox;
+            public TextView purchaseMessageTextView; // New TextView for the purchase message
 
             public ViewHolder(View itemView) {
                 super(itemView);
                 nameTextView = itemView.findViewById(R.id.nameTextView);
                 priceTextView = itemView.findViewById(R.id.priceTextView);
                 noteTextView = itemView.findViewById(R.id.noteTextView);
+                checkBox = itemView.findViewById(R.id.checkBox);
+                purchaseMessageTextView = itemView.findViewById(R.id.purchaseMessageTextView); // Initialize the new TextView
+
+                // Set an OnClickListener for the checkbox
+                checkBox.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        // Check if the checkbox is checked
+                        boolean isChecked = checkBox.isChecked();
+
+                        // Apply the strike-through effect and show/hide the purchase message accordingly
+                        if (isChecked) {
+                            // Checkbox is checked
+                            nameTextView.setPaintFlags(nameTextView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                            purchaseMessageTextView.setVisibility(View.VISIBLE);
+                        } else {
+                            // Checkbox is unchecked
+                            nameTextView.setPaintFlags(nameTextView.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                            purchaseMessageTextView.setVisibility(View.GONE);
+                        }
+                    }
+                });
             }
         }
+
     }
 
     // Change this threshold to make shake detection less sensitive
@@ -520,7 +548,7 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
             currentAcceleration = (float) Math.sqrt(x * x + y * y + z * z);
 
             // Adjust the threshold here
-            float customShakeThreshold = 15.0f; // You can change this value as needed
+            float customShakeThreshold = 10.0f; // You can change this value as needed
 
             float delta = currentAcceleration - lastAcceleration;
             if (delta > customShakeThreshold) {

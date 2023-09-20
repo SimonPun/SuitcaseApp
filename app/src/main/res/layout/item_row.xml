@@ -26,7 +26,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
 
-                <!-- Item Name TextView with strike-through -->
                 <TextView
                     android:id="@+id/nameTextView"
                     android:layout_width="wrap_content"
@@ -37,9 +36,15 @@
                     android:maxLines="1"
                     android:fontFamily="@font/nuto"
                     android:ellipsize="end"
-                    android:textStyle="bold"
                     android:layout_marginBottom="4dp"
-                    android:textDecorationLine="none" />
+                    android:textStyle="bold"
+                    android:autoLink="web"
+                    android:linksClickable="false"
+                    android:textColorLink="#333333"
+                    android:textColorHighlight="#333333"
+                    android:textIsSelectable="false" />
+
+
 
                 <!-- Strike-through View (Initially Invisible) -->
                 <View
@@ -83,6 +88,20 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
-        android:layout_alignParentEnd="true"
-        />
+        android:layout_alignParentEnd="true" />
+
+    <!-- TextView for the purchase message (Initially Invisible) -->
+    <TextView
+        android:id="@+id/purchaseMessageTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="purchased"
+        android:textColor="#FF0000"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:fontFamily="@font/nuto"
+        android:ellipsize="end"
+        android:layout_marginStart="8dp"
+        android:layout_toLeftOf="@+id/checkBox"
+    android:visibility="gone" />
 </RelativeLayout>
