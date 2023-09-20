@@ -520,7 +520,7 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
             currentAcceleration = (float) Math.sqrt(x * x + y * y + z * z);
 
             // Adjust the threshold here
-            float customShakeThreshold = 30.0f; // You can change this value as needed
+            float customShakeThreshold = 15.0f; // You can change this value as needed
 
             float delta = currentAcceleration - lastAcceleration;
             if (delta > customShakeThreshold) {
