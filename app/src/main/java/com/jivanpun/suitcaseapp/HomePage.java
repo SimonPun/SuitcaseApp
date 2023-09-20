@@ -14,6 +14,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -58,14 +59,13 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
     private List<Map<String, Object>> itemsList = new ArrayList<>();
     private ListenerRegistration itemsListener;
     private SwipeRefreshLayout swipeRefreshLayout;
+    private Map<String, Object> originalItemData;
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private float lastAcceleration = 0;
     private float currentAcceleration = 0;
     private static final float SHAKE_THRESHOLD = 5.0f;
-    private Map<String, Object> originalItemData;
-
-    private boolean isShakeEnabled = true; // Flag to enable/disable shake functionality
+    private boolean isShakeEnabled = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,52 +121,29 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-        isShakeEnabled = true; // Enable shake functionality when resuming the activity
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        sensorManager.unregisterListener(this);
-        isShakeEnabled = false; // Disable shake functionality when pausing the activity
-    }
-
-    @Override
     protected void onStart() {
         super.onStart();
         startItemsListener();
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        isShakeEnabled = true;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        sensorManager.unregisterListener(this);
+        isShakeEnabled = false;
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
         stopItemsListener();
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER && isShakeEnabled) {
-            float x = event.values[0];
-            float y = event.values[1];
-            float z = event.values[2];
-
-            lastAcceleration = currentAcceleration;
-            currentAcceleration = (float) Math.sqrt(x * x + y * y + z * z);
-
-            float deltaAcceleration = currentAcceleration - lastAcceleration;
-
-            if (deltaAcceleration > SHAKE_THRESHOLD) {
-                undoEdit();
-            }
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // Not used in this example
     }
 
     private void startItemsListener() {
@@ -219,19 +196,15 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_profile) {
-            // Handle the Profile menu item
             return true;
         } else if (id == R.id.action_purchase) {
-            // Redirect to the PurchasePage activity
             Intent purchaseIntent = new Intent(this, PurchasePage.class);
             startActivity(purchaseIntent);
             return true;
         } else if (id == R.id.action_logout) {
-            // Handle the Logout menu item
             showLogoutConfirmationDialog();
             return true;
         } else if (id == android.R.id.home) {
-            // Handle the Up button
             onBackPressed();
             return true;
         }
@@ -269,7 +242,7 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
                                     @Override
                                     public void onSuccess(DocumentReference documentReference) {
                                         Toast.makeText(HomePage.this, "Item added!", Toast.LENGTH_SHORT).show();
-                                        dialog.dismiss();
+                                        dialog.dismiss(); // Close the dialog on success
                                     }
                                 })
                                 .addOnFailureListener(new OnFailureListener() {
@@ -284,6 +257,7 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
             dialog.show();
         }
     }
+
 
     private void showLogoutConfirmationDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -321,7 +295,6 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
                 Button negativeButton = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
 
                 positiveButton.setTextColor(getResources().getColor(android.R.color.holo_red_light));
-
                 negativeButton.setTextColor(getResources().getColor(android.R.color.black));
             }
         });
@@ -365,7 +338,7 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
                                     @Override
                                     public void onSuccess(Void aVoid) {
                                         showToast("Item updated successfully!");
-                                        editDialog.dismiss();
+                                        editDialog.dismiss(); // Close the dialog on success
                                         itemsAdapter.notifyItemChanged(position);
                                     }
                                 })
@@ -380,64 +353,6 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
             });
             editDialog.show();
         }
-    }
-
-    private void deleteItem(int position) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Confirm Deletion");
-        builder.setMessage("Are you sure you want to delete this item?");
-        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                Map<String, Object> deletedItem = itemsList.get(position);
-                DocumentReference itemRef = (DocumentReference) deletedItem.get("docRef");
-                itemRef.delete()
-                        .addOnSuccessListener(new OnSuccessListener<Void>() {
-                            @Override
-                            public void onSuccess(Void aVoid) {
-                                showToast("Item deleted successfully!");
-                            }
-                        })
-                        .addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                showToast("Failed to delete item: " + e.getMessage());
-                            }
-                        });
-                itemsAdapter.removeItem(position);
-            }
-        });
-
-        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                dialogInterface.dismiss();
-                itemsAdapter.notifyItemChanged(position);
-            }
-        });
-
-        AlertDialog dialog = builder.create();
-
-        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
-            @Override
-            public void onShow(DialogInterface dialogInterface) {
-                Button positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
-                Button negativeButton = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
-
-                positiveButton.setTextColor(getResources().getColor(android.R.color.holo_red_light));
-                negativeButton.setTextColor(getResources().getColor(android.R.color.black));
-            }
-        });
-
-        dialog.show();
-    }
-
-    private void showToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-    }
-
-    private void refreshData() {
-        startItemsListener();
     }
 
     private void undoEdit() {
@@ -463,18 +378,77 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
         }
     }
 
-    class ItemsAdapter extends RecyclerView.Adapter<ItemsAdapter.ViewHolder> {
+    private void deleteItem(int position) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Confirm Delete");
+        builder.setMessage("Are you sure you want to delete this item?");
+        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                DocumentReference itemRef = (DocumentReference) itemsList.get(position).get("docRef");
+                itemRef.delete()
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                showToast("Item deleted successfully!");
+                                itemsAdapter.notifyItemRemoved(position);
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                showToast("Failed to delete item: " + e.getMessage());
+                            }
+                        });
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+                itemsAdapter.notifyItemChanged(position);
+            }
+        });
+        AlertDialog dialog = builder.create();
+
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialogInterface) {
+                Button positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                Button negativeButton = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+
+                positiveButton.setTextColor(getResources().getColor(android.R.color.holo_red_light));
+                negativeButton.setTextColor(getResources().getColor(android.R.color.black));
+            }
+        });
+
+        dialog.show();
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    private void refreshData() {
+        if (itemsListener != null) {
+            itemsListener.remove();
+        }
+        startItemsListener();
+    }
+
+    private class ItemsAdapter extends RecyclerView.Adapter<ItemsAdapter.ViewHolder> {
 
         private List<Map<String, Object>> itemsList;
 
-        ItemsAdapter(List<Map<String, Object>> itemsList) {
+        public ItemsAdapter(List<Map<String, Object>> itemsList) {
             this.itemsList = itemsList;
         }
 
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_layout, parent, false);
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_row, parent, false);
             return new ViewHolder(view);
         }
 
@@ -485,8 +459,32 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
             String itemPrice = (String) itemData.get("price");
             String itemNote = (String) itemData.get("notes");
             holder.nameTextView.setText(itemName);
-            holder.priceTextView.setText("Price: " + itemPrice);
+            holder.priceTextView.setText(itemPrice);
             holder.noteTextView.setText(itemNote);
+            holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    int position = holder.getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION) {
+                        Map<String, Object> itemData = itemsList.get(position);
+                        String itemName = (String) itemData.get("Items Name");
+                        String itemPrice = (String) itemData.get("price");
+                        String itemNote = (String) itemData.get("notes");
+                        String shareMessage = "Item Name: " + itemName + "\n" +
+                                "Item Price: " + itemPrice + "\n" +
+                                "Item Note: " + itemNote;
+                        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                        shareIntent.setType("text/plain");
+                        shareIntent.putExtra(Intent.EXTRA_TEXT, shareMessage);
+                        if (shareIntent.resolveActivity(holder.itemView.getContext().getPackageManager()) != null) {
+                            holder.itemView.getContext().startActivity(shareIntent);
+                        } else {
+                            showToast("No SMS app available.");
+                        }
+                    }
+                    return true;
+                }
+            });
         }
 
         @Override
@@ -494,22 +492,46 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
             return itemsList.size();
         }
 
-        void removeItem(int position) {
-            itemsList.remove(position);
-            notifyItemRemoved(position);
-        }
+        public class ViewHolder extends RecyclerView.ViewHolder {
+            public TextView nameTextView;
+            public TextView priceTextView;
+            public TextView noteTextView;
 
-        class ViewHolder extends RecyclerView.ViewHolder {
-            TextView nameTextView;
-            TextView priceTextView;
-            TextView noteTextView;
-
-            ViewHolder(View itemView) {
+            public ViewHolder(View itemView) {
                 super(itemView);
                 nameTextView = itemView.findViewById(R.id.nameTextView);
                 priceTextView = itemView.findViewById(R.id.priceTextView);
                 noteTextView = itemView.findViewById(R.id.noteTextView);
             }
         }
+    }
+
+    // Change this threshold to make shake detection less sensitive
+
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (isShakeEnabled) {
+            float x = event.values[0];
+            float y = event.values[1];
+            float z = event.values[2];
+
+            lastAcceleration = currentAcceleration;
+            currentAcceleration = (float) Math.sqrt(x * x + y * y + z * z);
+
+            // Adjust the threshold here
+            float customShakeThreshold = 30.0f; // You can change this value as needed
+
+            float delta = currentAcceleration - lastAcceleration;
+            if (delta > customShakeThreshold) {
+                undoEdit();
+            }
+        }
+    }
+
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Not used in this example
     }
 }

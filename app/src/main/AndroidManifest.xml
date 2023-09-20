@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.jivanpun.suitcaseapp">
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-feature android:name="android.hardware.sensor.accelerometer" />
 
     <application
         android:allowBackup="true"
@@ -13,9 +15,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SuitcaseApp"
         tools:targetApi="31">
-        <activity android:name=".PurchasePage">
-
-        </activity>
+        <activity android:name=".PurchasePage"
+            android:exported="false" />
 
         <activity
             android:name=".RegisterPage"
