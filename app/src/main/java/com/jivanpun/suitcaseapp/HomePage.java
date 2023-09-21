@@ -3,6 +3,7 @@ package com.jivanpun.suitcaseapp;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Paint;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -16,7 +17,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -52,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 
 public class HomePage extends AppCompatActivity implements SensorEventListener {
-
     private FirebaseAuth auth;
     private GoogleSignInClient googleSignInClient;
     private FloatingActionButton floatingActionButton;
@@ -68,6 +70,8 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
     private float currentAcceleration = 0;
     private static final float SHAKE_THRESHOLD = 5.0f;
     private boolean isShakeEnabled = true;
+    private SharedPreferences sharedPreferences;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +80,7 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
         auth = FirebaseAuth.getInstance();
         googleSignInClient = GoogleSignIn.getClient(this, GoogleSignInOptions.DEFAULT_SIGN_IN);
         db = FirebaseFirestore.getInstance();
+        sharedPreferences = getSharedPreferences("ItemPreferences", MODE_PRIVATE);
         setUpAppBar();
         floatingActionButton = findViewById(R.id.fab);
         floatingActionButton.setOnClickListener(new View.OnClickListener() {
@@ -199,10 +204,7 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
         int id = item.getItemId();
         if (id == R.id.action_profile) {
             return true;
-        } else if (id == R.id.action_purchase) {
-            Intent purchaseIntent = new Intent(this, PurchasePage.class);
-            startActivity(purchaseIntent);
-            return true;
+
         } else if (id == R.id.action_logout) {
             showLogoutConfirmationDialog();
             return true;
@@ -238,11 +240,19 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
                         itemsData.put("notes", note);
                         itemsData.put("price", itemPrice);
                         itemsData.put("userId", currentUserId);
+
+                        // Add the item data to Firestore
                         db.collection("Items")
                                 .add(itemsData)
                                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                                     @Override
                                     public void onSuccess(DocumentReference documentReference) {
+                                        // Set the purchase status to false for the newly added item in SharedPreferences
+                                        int position = itemsList.size(); // Get the position of the newly added item
+                                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                                        editor.putBoolean("item_" + position + "_purchased", false);
+                                        editor.apply();
+
                                         Toast.makeText(HomePage.this, "Item added!", Toast.LENGTH_SHORT).show();
                                         dialog.dismiss(); // Close the dialog on success
                                     }
@@ -259,6 +269,7 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
             dialog.show();
         }
     }
+
 
 
     private void showLogoutConfirmationDialog() {
@@ -460,15 +471,36 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
             String itemName = (String) itemData.get("Items Name");
             String itemPrice = (String) itemData.get("price");
             String itemNote = (String) itemData.get("notes");
+
             holder.nameTextView.setText(itemName);
             holder.priceTextView.setText(itemPrice);
             holder.noteTextView.setText(itemNote);
+
+            holder.checkBox.setVisibility(View.VISIBLE);
+            holder.purchaseMessageTextView.setVisibility(View.GONE);
+
+            boolean isPurchased = sharedPreferences.getBoolean("item_" + position + "_purchased", false);
+
+            if (isPurchased) {
+                holder.checkBox.setVisibility(View.GONE);
+                holder.purchaseMessageTextView.setVisibility(View.VISIBLE);
+                holder.purchaseMessageTextView.setText("Purchased");
+            } else {
+                holder.checkBox.setVisibility(View.VISIBLE);
+                holder.purchaseMessageTextView.setVisibility(View.GONE);
+            }
+
+            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) holder.purchaseMessageTextView.getLayoutParams();
+            params.addRule(RelativeLayout.ALIGN_PARENT_END);
+            params.addRule(RelativeLayout.CENTER_VERTICAL);
+            holder.purchaseMessageTextView.setLayoutParams(params);
+
             holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    int position = holder.getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
-                        Map<String, Object> itemData = itemsList.get(position);
+                    int adapterPosition = holder.getAdapterPosition();
+                    if (adapterPosition != RecyclerView.NO_POSITION) {
+                        Map<String, Object> itemData = itemsList.get(adapterPosition);
                         String itemName = (String) itemData.get("Items Name");
                         String itemPrice = (String) itemData.get("price");
                         String itemNote = (String) itemData.get("notes");
@@ -487,7 +519,33 @@ public class HomePage extends AppCompatActivity implements SensorEventListener {
                     return true;
                 }
             });
+
+            holder.checkBox.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int adapterPosition = holder.getAdapterPosition();
+                    if (adapterPosition != RecyclerView.NO_POSITION) {
+                        boolean isChecked = holder.checkBox.isChecked();
+                        if (isChecked) {
+                            holder.checkBox.setVisibility(View.GONE);
+                            holder.purchaseMessageTextView.setVisibility(View.VISIBLE);
+                            holder.purchaseMessageTextView.setText("Purchased");
+
+                            // Display a toast message when the item is purchased
+                            showToast("Item Purchased");
+                        } else {
+                            holder.checkBox.setVisibility(View.VISIBLE);
+                            holder.purchaseMessageTextView.setVisibility(View.GONE);
+                        }
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putBoolean("item_" + adapterPosition + "_purchased", isChecked);
+                        editor.apply();
+                    }
+                }
+            });
+
         }
+
 
         @Override
         public int getItemCount() {
