@@ -62,15 +62,15 @@ android:layout_height="wrap_content"
     app:boxCornerRadiusTopStart="16dp"
     app:boxCornerRadiusTopEnd="16dp">
 
-<com.google.android.material.textfield.TextInputEditText
-android:id="@+id/priceEditText"
-android:layout_width="match_parent"
-android:layout_height="wrap_content"
-android:hint="Enter Price"
-android:inputType="text"
-android:textSize="18sp"
-android:textColor="@color/black" />
-    </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/priceEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Price"
+        android:inputType="text"
+        android:textColor="@color/black"
+        android:textSize="18sp" />
+</com.google.android.material.textfield.TextInputLayout>
 
 <com.google.android.material.textfield.TextInputLayout
 android:id="@+id/descriptionInputLayout"

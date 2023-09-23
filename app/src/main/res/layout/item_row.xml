@@ -103,5 +103,5 @@
         android:ellipsize="end"
         android:layout_marginStart="8dp"
         android:layout_toLeftOf="@+id/checkBox"
-    android:visibility="gone" />
+        android:visibility="gone" />
 </RelativeLayout>
