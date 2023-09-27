@@ -2,11 +2,11 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="blue">#2A2D30</color>s
+    <color name="blue">#335374</color>s
     <color name="grey">#ff424242</color>
     <color name="lavender">#8692f7</color>
 
-    <color name="primaryColor">#3AB691</color>
+    <color name="primaryColor">#DAE6F3</color>
 
     <color name="baseColor">#F9F9F9</color>
     <color name="red">#FF0000</color>
