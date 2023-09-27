@@ -48,4 +48,9 @@ dependencies {
     implementation ("androidx.recyclerview:recyclerview:your_recyclerview_version")
     implementation ("androidx.cardview:cardview:your_cardview_version")
     implementation ("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation ("com.squareup.picasso:picasso:2.71828")
+    implementation ("com.github.bumptech.glide:glide:4.12.0")
+    annotationProcessor ("com.github.bumptech.glide:compiler:4.12.0")
+
+
 }
