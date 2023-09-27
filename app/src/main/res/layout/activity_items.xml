@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".ItemsActivity"
+    android:background="@android:color/white">
+
+    <!-- Material Toolbar -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarItemsDetail"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:title="Item Details"
+        app:titleTextColor="@android:color/white"
+        app:contentInsetStart="0dp"
+        app:titleTextAppearance="@style/ToolbarTitleTextAppearance"
+        android:background="?attr/colorPrimary">
+
+        <!-- Add the share icon to the toolbar -->
+        <ImageView
+            android:id="@+id/shareIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:clickable="true"
+            android:contentDescription="@string/share_icon"
+            android:focusable="true"
+            android:paddingEnd="16dp"
+            android:src="@drawable/ic_share"
+            tools:ignore="ImageContrastCheck,RtlSymmetry,TouchTargetSizeCheck" />
+    </com.google.android.material.appbar.MaterialToolbar>
+
+    <!-- Product Image -->
+    <ImageView
+        android:id="@+id/itemImageView"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:adjustViewBounds="true"
+        android:background="@android:color/black"
+        android:contentDescription="@string/item_image"
+        android:scaleType="centerCrop"
+        android:src="@drawable/image_placeholder"
+        tools:ignore="ImageContrastCheck" />
+
+    <!-- Product Name -->
+    <TextView
+        android:id="@+id/itemNameTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/item_name"
+        android:textSize="24sp"
+        android:textColor="@android:color/black"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="16dp" />
+
+    <!-- Product Price -->
+    <TextView
+        android:id="@+id/itemPriceTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/item_price"
+        android:textSize="20sp"
+        android:textColor="@android:color/black"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="8dp" />
+
+    <!-- Product Description -->
+    <TextView
+        android:id="@+id/itemDescriptionTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/item_description"
+        android:textSize="18sp"
+        android:textColor="@android:color/black"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="8dp" />
+
+    <!-- Send Message Button -->
+    <Button
+        android:id="@+id/sendMessageButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/send_message"
+        android:layout_margin="16dp"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp"
+        android:background="@drawable/round_btn"
+        android:textColor="@android:color/white"
+        tools:ignore="VisualLintButtonSize" />
+
+</LinearLayout>

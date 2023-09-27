@@ -391,6 +391,7 @@ public class HomePage extends AppCompatActivity {
             return new ItemViewHolder(view);
         }
 
+
         @Override
         public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
             Map<String, Object> itemData = itemsList.get(position);
@@ -409,6 +410,7 @@ public class HomePage extends AppCompatActivity {
                 holder.itemNameTextView.setPaintFlags(holder.itemNameTextView.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
             }
 
+            holder.checkboxPurchased.setOnCheckedChangeListener(null); // Remove the listener temporarily
             holder.checkboxPurchased.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 // Get the Firestore document reference for the item
                 DocumentReference itemRef = (DocumentReference) itemData.get("docRef");
@@ -450,6 +452,7 @@ public class HomePage extends AppCompatActivity {
                 v.getContext().startActivity(intent);
             });
         }
+
 
         @Override
         public int getItemCount() {
