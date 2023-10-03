@@ -405,29 +405,47 @@ public class HomePage extends AppCompatActivity {
                     } else {
                         DocumentReference itemRef = (DocumentReference) itemData.get("docRef");
                         if (itemRef != null) {
-                            // Update the Firestore document with the new data
-                            Map<String, Object> updatedData = new HashMap<>();
-                            updatedData.put("Items Name", editedName);
-                            updatedData.put("notes", editedDescription);
-                            updatedData.put("price", editedPrice);
-
                             // Check if a new image was selected
                             if (imageUri != null) {
                                 // Upload the new image to Firebase Storage
-                                uploadImageToFirebaseStorage(imageUri, editedName, editedDescription, editedPrice);
-                                updatedData.put("imageUrl", imageUri.toString()); // Update the image URL in Firestore
-                            }
+                                String imageName = "item_image_" + System.currentTimeMillis() + ".jpg";
+                                StorageReference storageRef = FirebaseStorage.getInstance().getReference()
+                                        .child("item_images")
+                                        .child(currentUser.getUid())
+                                        .child(imageName);
 
-                            // Update the Firestore document
-                            itemRef.update(updatedData)
-                                    .addOnSuccessListener(aVoid -> {
-                                        // Successfully updated the document
-                                        Toast.makeText(HomePage.this, "Item updated successfully!", Toast.LENGTH_SHORT).show();
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        // Handle the error if the update fails
-                                        Toast.makeText(HomePage.this, "Failed to update item: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                    });
+                                UploadTask uploadTask = storageRef.putFile(imageUri);
+
+                                uploadTask.addOnCompleteListener(HomePage.this, task -> {
+                                    if (task.isSuccessful()) {
+                                        // Get the download URL of the new image
+                                        storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                                            // Create a new data map to update Firestore document
+                                            Map<String, Object> updatedData = new HashMap<>();
+                                            updatedData.put("imageUrl", downloadUri.toString());
+                                            updatedData.put("Items Name", editedName);
+                                            updatedData.put("notes", editedDescription);
+                                            updatedData.put("price", editedPrice);
+
+
+                                            // Update the Glide image loader for the editItemImageView
+                                            Glide.with(HomePage.this)
+                                                    .load(downloadUri.toString())
+                                                    .placeholder(R.drawable.image_placeholder) // Placeholder image while loading
+                                                    .error(R.drawable.image_placeholder) // Error image if loading fails
+                                                    .into(editItemImageView);
+
+                                            // Update the Firestore document with the edited data
+                                            updateItemInFirestore(itemRef, updatedData);
+                                        });
+                                    } else {
+                                        Toast.makeText(HomePage.this, "Failed to upload image: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                            } else {
+                                // No new image selected, update the Firestore document with the existing image URL
+                                updateItemInFirestore(itemRef, itemData);
+                            }
                         }
                     }
                 }
@@ -444,6 +462,22 @@ public class HomePage extends AppCompatActivity {
             editDialog.show();
         }
     }
+
+
+    // Helper method to update the Firestore document with the edited data
+    private void updateItemInFirestore(DocumentReference itemRef, Map<String, Object> updatedData) {
+        itemRef.update(updatedData)
+                .addOnSuccessListener(aVoid -> {
+                    // Successfully updated the document
+                    Toast.makeText(HomePage.this, "Item updated successfully!", Toast.LENGTH_SHORT).show();
+                    refreshData(); // Refresh the data to reflect the changes
+                })
+                .addOnFailureListener(e -> {
+                    // Handle the error if the update fails
+                    Toast.makeText(HomePage.this, "Failed to update item: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
 
 
 
