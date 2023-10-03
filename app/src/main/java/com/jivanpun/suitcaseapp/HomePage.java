@@ -17,17 +17,24 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatEditText;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import com.bumptech.glide.Glide;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -56,6 +63,11 @@ public class HomePage extends AppCompatActivity {
     private Dialog customDialog;
     private ActivityResultLauncher<Intent> galleryLauncher;
     private ShakeDetector shakeDetector; // Add this line
+    private ImageView itemImageView;
+    private ImageView editItemImageView;
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +112,27 @@ public class HomePage extends AppCompatActivity {
         // Initialize ShakeDetector
         shakeDetector = new ShakeDetector(this);
         shakeDetector.setOnShakeListener(() -> clearInputFields());
+
+        // Initialize the galleryLauncher
+        galleryLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri selectedImageUri = result.getData().getData();
+                        if (itemImageView != null) {
+                            // Set the selected image for adding a new item
+                            itemImageView.setImageURI(selectedImageUri);
+                            imageUri = selectedImageUri;
+                        } else if (editItemImageView != null) {
+                            // Set the selected image for editing an item
+                            editItemImageView.setImageURI(selectedImageUri);
+                            // Store the selected image URI for editing
+                            // You may need to update this logic based on your use case
+                            imageUri = selectedImageUri;
+                        }
+                    }
+                });
+
+
     }
 
     // Inside your HomePage class
@@ -188,33 +221,53 @@ public class HomePage extends AppCompatActivity {
     private void showCustomDialog() {
         FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser != null) {
-            customDialog = new Dialog(this);
-            customDialog.setContentView(R.layout.additem_menu);
-            Objects.requireNonNull(customDialog.getWindow()).setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            androidx.appcompat.widget.AppCompatEditText inputDesName = customDialog.findViewById(R.id.nameEditText);
-            androidx.appcompat.widget.AppCompatEditText inputNote = customDialog.findViewById(R.id.descriptionEditText);
-            androidx.appcompat.widget.AppCompatEditText inputPrice = customDialog.findViewById(R.id.priceEditText);
-            Button saveButton = customDialog.findViewById(R.id.saveButton);
-            TextView chooseImage = customDialog.findViewById(R.id.chooseImage);
+            MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(this);
+            dialogBuilder.setTitle("Add Item");
 
-            chooseImage.setOnClickListener(v -> {
-                Intent galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(galleryIntent, GALLERY_REQUEST_CODE);
+            View dialogView = getLayoutInflater().inflate(R.layout.additem_menu, null);
+            dialogBuilder.setView(dialogView);
+            itemImageView = dialogView.findViewById(R.id.imageViewItem);
+            TextView chooseImageTextView = dialogView.findViewById(R.id.chooseImage);
+            TextInputEditText inputDesName = dialogView.findViewById(R.id.nameEditText);
+            TextInputEditText inputNote = dialogView.findViewById(R.id.descriptionEditText);
+            TextInputEditText inputPrice = dialogView.findViewById(R.id.priceEditText);
+
+            chooseImageTextView.setOnClickListener(v -> {
+                // Launch the gallery to select an image
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                galleryLauncher.launch(intent);
             });
 
-            saveButton.setOnClickListener(v -> {
-                String itemName = Objects.requireNonNull(inputDesName.getText()).toString().trim();
-                String note = Objects.requireNonNull(inputNote.getText()).toString().trim();
-                String itemPrice = Objects.requireNonNull(inputPrice.getText()).toString().trim();
-                if (itemName.isEmpty() || note.isEmpty() || itemPrice.isEmpty()) {
-                    Toast.makeText(HomePage.this, "Item name, description, and price are required!", Toast.LENGTH_SHORT).show();
-                } else {
-                    uploadImageToFirebaseStorage(imageUri, itemName, note, itemPrice);
+            dialogBuilder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    String itemName = inputDesName.getText().toString().trim();
+                    String note = inputNote.getText().toString().trim();
+                    String itemPrice = inputPrice.getText().toString().trim();
+                    if (itemName.isEmpty() || note.isEmpty() || itemPrice.isEmpty() || imageUri == null) {
+                        Toast.makeText(HomePage.this, "Item name, description, price, and image are required!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        // Check if an image has been selected
+                        uploadImageToFirebaseStorage(imageUri, itemName, note, itemPrice);
+                    }
                 }
             });
+
+            dialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    dialogInterface.dismiss();
+                }
+            });
+
+            AlertDialog customDialog = dialogBuilder.create();
             customDialog.show();
         }
     }
+
+
+
+
 
     private Uri imageUri;
 
@@ -223,14 +276,16 @@ public class HomePage extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == GALLERY_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
-            Uri imageUri = data.getData();
+            // Get the selected image URI
+            Uri selectedImageUri = data.getData();
 
-            if (customDialog != null) {
-                ImageView imageView = customDialog.findViewById(R.id.imageView);
-                imageView.setImageURI(imageUri);
-                this.imageUri = imageUri;
-            }
+            // Display the selected image in the ImageView
+            itemImageView.setImageURI(selectedImageUri);
+
+            // Store the selected image URI in a member variable
+            imageUri = selectedImageUri;
         }
+
     }
 
     private void uploadImageToFirebaseStorage(Uri imageUri, String itemName, String note, String itemPrice) {
@@ -271,7 +326,6 @@ public class HomePage extends AppCompatActivity {
                     .add(itemsData)
                     .addOnSuccessListener(documentReference -> {
                         Toast.makeText(HomePage.this, "Item added!", Toast.LENGTH_SHORT).show();
-                        customDialog.dismiss();
                     })
                     .addOnFailureListener(e -> Toast.makeText(HomePage.this, "Failed to add item: " + e.getMessage(), Toast.LENGTH_SHORT).show());
         }
@@ -309,40 +363,90 @@ public class HomePage extends AppCompatActivity {
             String itemName = (String) itemData.get("Items Name");
             String itemNote = (String) itemData.get("notes");
             String itemPrice = (String) itemData.get("price");
-            Dialog editDialog = new Dialog(this);
-            editDialog.setContentView(R.layout.edit_item_dialog);
-            androidx.appcompat.widget.AppCompatEditText editNameEditText = editDialog.findViewById(R.id.nameEditText);
-            androidx.appcompat.widget.AppCompatEditText editDescriptionEditText = editDialog.findViewById(R.id.descriptionEditText);
-            androidx.appcompat.widget.AppCompatEditText editPriceEditText = editDialog.findViewById(R.id.priceEditText);
-            Button saveEditButton = editDialog.findViewById(R.id.saveButton);
+            String itemImage = (String) itemData.get("imageUrl");
+
+            MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(this);
+            dialogBuilder.setTitle("Edit Item");
+
+            View dialogView = getLayoutInflater().inflate(R.layout.edit_item_dialog, null);
+            dialogBuilder.setView(dialogView);
+
+            AppCompatEditText editNameEditText = dialogView.findViewById(R.id.nameEditText);
+            AppCompatEditText editDescriptionEditText = dialogView.findViewById(R.id.descriptionEditText);
+            AppCompatEditText editPriceEditText = dialogView.findViewById(R.id.priceEditText);
+            TextView titleTextView = dialogView.findViewById(R.id.titleTextView);
+            editItemImageView = dialogView.findViewById(R.id.imageViewEdit);
+
+            titleTextView.setOnClickListener(v -> {
+                // Launch the gallery to select a new image
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                galleryLauncher.launch(intent);
+            });
+
+            // Load and display the image using Glide
+            Glide.with(this)
+                    .load(itemImage)
+                    .placeholder(R.drawable.image_placeholder) // Placeholder image while loading
+                    .error(R.drawable.image_placeholder) // Error image if loading fails
+                    .into(editItemImageView);
+
             editNameEditText.setText(itemName);
             editDescriptionEditText.setText(itemNote);
             editPriceEditText.setText(itemPrice);
-            saveEditButton.setOnClickListener(v -> {
-                String editedName = Objects.requireNonNull(editNameEditText.getText()).toString().trim();
-                String editedDescription = Objects.requireNonNull(editDescriptionEditText.getText()).toString().trim();
-                String editedPrice = Objects.requireNonNull(editPriceEditText.getText()).toString().trim();
-                if (editedName.isEmpty() || editedDescription.isEmpty() || editedPrice.isEmpty()) {
-                    Toast.makeText(getApplicationContext(), "Item name, description, and price are required!", Toast.LENGTH_SHORT).show();
-                } else {
-                    DocumentReference itemRef = (DocumentReference) itemData.get("docRef");
-                    Map<String, Object> updatedData = new HashMap<>();
-                    updatedData.put("Items Name", editedName);
-                    updatedData.put("notes", editedDescription);
-                    updatedData.put("price", editedPrice);
-                    assert itemRef != null;
-                    itemRef.update(updatedData)
-                            .addOnSuccessListener(aVoid -> {
-                                Toast.makeText(HomePage.this, "Item updated successfully!", Toast.LENGTH_SHORT).show();
-                                editDialog.dismiss();
-                                itemsAdapter.notifyItemChanged(position);
-                            })
-                            .addOnFailureListener(e -> Toast.makeText(HomePage.this, "Failed to update item: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+
+            dialogBuilder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    String editedName = editNameEditText.getText().toString().trim();
+                    String editedDescription = editDescriptionEditText.getText().toString().trim();
+                    String editedPrice = editPriceEditText.getText().toString().trim();
+                    if (editedName.isEmpty() || editedDescription.isEmpty() || editedPrice.isEmpty()) {
+                        Toast.makeText(getApplicationContext(), "Item name, description, and price are required!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        DocumentReference itemRef = (DocumentReference) itemData.get("docRef");
+                        if (itemRef != null) {
+                            // Update the Firestore document with the new data
+                            Map<String, Object> updatedData = new HashMap<>();
+                            updatedData.put("Items Name", editedName);
+                            updatedData.put("notes", editedDescription);
+                            updatedData.put("price", editedPrice);
+
+                            // Check if a new image was selected
+                            if (imageUri != null) {
+                                // Upload the new image to Firebase Storage
+                                uploadImageToFirebaseStorage(imageUri, editedName, editedDescription, editedPrice);
+                                updatedData.put("imageUrl", imageUri.toString()); // Update the image URL in Firestore
+                            }
+
+                            // Update the Firestore document
+                            itemRef.update(updatedData)
+                                    .addOnSuccessListener(aVoid -> {
+                                        // Successfully updated the document
+                                        Toast.makeText(HomePage.this, "Item updated successfully!", Toast.LENGTH_SHORT).show();
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        // Handle the error if the update fails
+                                        Toast.makeText(HomePage.this, "Failed to update item: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    });
+                        }
+                    }
                 }
             });
+
+            dialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    dialogInterface.dismiss();
+                }
+            });
+
+            AlertDialog editDialog = dialogBuilder.create();
             editDialog.show();
         }
     }
+
+
+
 
     private void deleteItem(int position) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -391,7 +495,6 @@ public class HomePage extends AppCompatActivity {
             return new ItemViewHolder(view);
         }
 
-
         @Override
         public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
             Map<String, Object> itemData = itemsList.get(position);
@@ -410,7 +513,6 @@ public class HomePage extends AppCompatActivity {
                 holder.itemNameTextView.setPaintFlags(holder.itemNameTextView.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
             }
 
-            holder.checkboxPurchased.setOnCheckedChangeListener(null); // Remove the listener temporarily
             holder.checkboxPurchased.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 // Get the Firestore document reference for the item
                 DocumentReference itemRef = (DocumentReference) itemData.get("docRef");
@@ -452,6 +554,8 @@ public class HomePage extends AppCompatActivity {
                 v.getContext().startActivity(intent);
             });
         }
+
+
 
 
         @Override

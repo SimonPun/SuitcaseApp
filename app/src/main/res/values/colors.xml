@@ -2,7 +2,7 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="blue">#335374</color>s
+    <color name="blue">#9962A8</color>s
     <color name="grey">#ff424242</color>
     <color name="lavender">#8692f7</color>
 
@@ -10,7 +10,6 @@
 
     <color name="baseColor">#F9F9F9</color>
     <color name="red">#FF0000</color>
-
     <color name="secondaryColor">#DB5252</color>
 
     <!-- <color name="optionalColor">#37A9DB</color>-->

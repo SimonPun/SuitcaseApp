@@ -1,5 +1,14 @@
-<!-- res/drawable/dialog_background.xml -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="#FFFFFF" /> <!-- Background color of the dialog box -->
-    <corners android:radius="12dp" /> <!-- Adjust the radius to control the corner roundness -->
-</shape>
+<!-- rounded_dialog_background.xml -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/white" /> <!-- Background color -->
+            <corners android:radius="16dp" /> <!-- Adjust the radius as needed -->
+        </shape>
+    </item>
+    <item android:id="@android:id/content">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" /> <!-- Transparent color -->
+        </shape>
+    </item>
+</layer-list>
