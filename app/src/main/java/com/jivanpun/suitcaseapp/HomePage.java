@@ -478,10 +478,6 @@ public class HomePage extends AppCompatActivity {
                 });
     }
 
-
-
-
-
     private void deleteItem(int position) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Confirm Delete");
